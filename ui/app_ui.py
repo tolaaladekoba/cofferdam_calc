@@ -1,4 +1,3 @@
-# ui/app_ui.py
 print("✅ LOADED NEW app_ui.py")
 
 import tkinter as tk
@@ -23,42 +22,44 @@ WALER_CASES = [
 ]
 
 # ---------------------------
-# THEME tuned to your mockup colors
+# THEME — matched to Figma mockup
 # ---------------------------
 THEMES = {
     "light": {
-        "page_bg": "#EEF1F5",     # soft gray like mockup
-        "card_bg": "#F7F7F7",     # light card interior
-        "card_border": "#D6D6D6",
-        "text": "#1F2937",
-        "muted": "#374151",
+        "page_bg":    "#F0F2F5",      # soft cool gray page background
+        "card_bg":    "#FFFFFF",      # pure white card
+        "card_border":"#D1D5DB",      # light gray border
 
-        # Button "gradient" colors (top -> bottom)
-        "btn_top": "#2C49F2",
-        "btn_bottom": "#1E3FAE",
-        "btn_top_sel": "#355CFF",
-        "btn_bottom_sel": "#2449CC",
-        "btn_text": "#FFFFFF",
+        "text":       "#111827",      # near-black titles
+        "muted":      "#4B5563",      # medium gray descriptions
 
-        # Disabled look
-        "disabled_bg": "#D6D6D6",
-        "disabled_text": "#6B7280",
+        # Buttons — vivid royal blue matching mockup
+        "btn_top":        "#3B5BF6",  # bright blue top
+        "btn_bottom":     "#2D4DE0",  # slightly deeper blue bottom
+        "btn_top_sel":    "#1E3FC7",  # darker when selected
+        "btn_bottom_sel": "#1530A8",
+        "btn_text":       "#FFFFFF",
+
+        # Disabled
+        "disabled_bg":   "#E5E7EB",
+        "disabled_text": "#9CA3AF",
     },
     "dark": {
-        "page_bg": "#0B1220",
-        "card_bg": "#101827",
-        "card_border": "#24324A",
-        "text": "#EAF0FF",
-        "muted": "#A7B3CC",
+        "page_bg":    "#0F172A",
+        "card_bg":    "#1E293B",
+        "card_border":"#334155",
 
-        "btn_top": "#2C49F2",
-        "btn_bottom": "#1E3FAE",
-        "btn_top_sel": "#3B82F6",
-        "btn_bottom_sel": "#2449CC",
-        "btn_text": "#FFFFFF",
+        "text":       "#F1F5F9",
+        "muted":      "#94A3B8",
 
-        "disabled_bg": "#24324A",
-        "disabled_text": "#8FA1C2",
+        "btn_top":        "#3B5BF6",
+        "btn_bottom":     "#2D4DE0",
+        "btn_top_sel":    "#4F72FF",
+        "btn_bottom_sel": "#3B5BF6",
+        "btn_text":       "#FFFFFF",
+
+        "disabled_bg":   "#334155",
+        "disabled_text": "#64748B",
     },
 }
 
@@ -73,7 +74,7 @@ class GradientButton(tk.Frame):
         command,
         width=360,
         height=46,
-        radius=14,
+        radius=10,
         font=("Arial", 12, "bold"),
         theme_getter=None,
         selected=False,
@@ -123,23 +124,29 @@ class GradientButton(tk.Frame):
         self.canvas.delete("all")
         th = self._theme_getter()
 
-        # Disabled takes precedence
+        # Background color of the parent — needed for canvas bg
+        try:
+            parent_bg = self.master.cget("bg")
+        except Exception:
+            parent_bg = th["card_bg"]
+        self.canvas.configure(bg=parent_bg)
+        self.configure(bg=parent_bg)
+
         if self._disabled:
-            top = th["disabled_bg"]
+            top    = th["disabled_bg"]
             bottom = th["disabled_bg"]
             text_color = th["disabled_text"]
         else:
             if self._selected:
-                top = th["btn_top_sel"]
+                top    = th["btn_top_sel"]
                 bottom = th["btn_bottom_sel"]
             else:
-                top = th["btn_top"]
+                top    = th["btn_top"]
                 bottom = th["btn_bottom"]
 
-            # Slight hover brighten (very subtle)
             if self._hover and not self._selected:
-                top = _mix_hex(top, "#FFFFFF", 0.07)
-                bottom = _mix_hex(bottom, "#FFFFFF", 0.07)
+                top    = _mix_hex(top,    "#FFFFFF", 0.10)
+                bottom = _mix_hex(bottom, "#FFFFFF", 0.10)
 
             text_color = th["btn_text"]
 
@@ -147,26 +154,25 @@ class GradientButton(tk.Frame):
         w = self._width
         h = self._height
 
-        # Outer rounded rect in bottom color
-        _rounded_rect(self.canvas, 2, 2, w - 2, h - 2, r, fill=bottom, outline="")
-        # Top overlay (rounded) for gradient feel
-        _rounded_rect(self.canvas, 2, 2, w - 2, int(h * 0.55), r, fill=top, outline="")
+        # Draw body in bottom color
+        _rounded_rect(self.canvas, 0, 0, w, h, r, fill=bottom, outline="")
+        # Top half overlay for gradient feel
+        _rounded_rect(self.canvas, 0, 0, w, int(h * 0.55), r, fill=top, outline="")
 
-        # Subtle highlight line near top (only when enabled)
+        # Subtle inner highlight line
         if not self._disabled:
             self.canvas.create_line(
-                12, 10, w - 12, 10,
-                fill=_mix_hex(top, "#FFFFFF", 0.25),
+                r + 4, 6, w - r - 4, 6,
+                fill=_mix_hex(top, "#FFFFFF", 0.30),
                 width=1
             )
 
-        # Text
+        # Label
         self.canvas.create_text(
-            w // 2,
-            h // 2,
+            w // 2, h // 2,
             text=self._text,
             fill=text_color,
-            font=self._font
+            font=self._font,
         )
 
     def _on_enter(self, _):
@@ -178,32 +184,31 @@ class GradientButton(tk.Frame):
         self.redraw()
 
 
-def _rounded_rect(c: tk.Canvas, x1, y1, x2, y2, r, fill, outline):
+def _rounded_rect(c, x1, y1, x2, y2, r, fill, outline):
     points = [
         x1 + r, y1,
         x2 - r, y1,
-        x2, y1,
-        x2, y1 + r,
-        x2, y2 - r,
-        x2, y2,
+        x2,     y1,
+        x2,     y1 + r,
+        x2,     y2 - r,
+        x2,     y2,
         x2 - r, y2,
         x1 + r, y2,
-        x1, y2,
-        x1, y2 - r,
-        x1, y1 + r,
-        x1, y1
+        x1,     y2,
+        x1,     y2 - r,
+        x1,     y1 + r,
+        x1,     y1,
     ]
     return c.create_polygon(points, smooth=True, fill=fill, outline=outline)
+
 
 def _mix_hex(a: str, b: str, t: float) -> str:
     a = a.lstrip("#")
     b = b.lstrip("#")
-    ar, ag, ab = int(a[0:2], 16), int(a[2:4], 16), int(a[4:6], 16)
-    br, bg, bb = int(b[0:2], 16), int(b[2:4], 16), int(b[4:6], 16)
-    rr = int(ar + (br - ar) * t)
-    rg = int(ag + (bg - ag) * t)
-    rb = int(ab + (bb - ab) * t)
-    return f"#{rr:02x}{rg:02x}{rb:02x}"
+    ar, ag, ab_ = int(a[0:2], 16), int(a[2:4], 16), int(a[4:6], 16)
+    br, bg, bb  = int(b[0:2], 16), int(b[2:4], 16), int(b[4:6], 16)
+    return f"#{int(ar+(br-ar)*t):02x}{int(ag+(bg-ag)*t):02x}{int(ab_+(bb-ab_)*t):02x}"
+
 
 # ---------------------------
 # APP
@@ -214,10 +219,10 @@ def run_app() -> None:
     root.geometry("1150x700")
     root.minsize(1050, 650)
 
-    theme_name = tk.StringVar(value="light")
+    theme_name     = tk.StringVar(value="light")
     selected_sheet = tk.StringVar(value="")
     selected_waler = tk.StringVar(value="")
-    current = tk.StringVar(value="sheet")  # sheet | waler
+    current        = tk.StringVar(value="sheet")
 
     def th():
         return THEMES[theme_name.get()]
@@ -228,7 +233,7 @@ def run_app() -> None:
         screen.configure(bg=th()["page_bg"])
 
         toggle_btn.configure(
-            text="Dark Mode" if theme_name.get() == "light" else "Light Mode",
+            text="☀ Light Mode" if theme_name.get() == "dark" else "🌙 Dark Mode",
             bg=th()["card_bg"],
             fg=th()["text"],
             activebackground=th()["card_bg"],
@@ -238,7 +243,7 @@ def run_app() -> None:
             highlightthickness=1,
             highlightbackground=th()["card_border"],
             cursor="hand2",
-            padx=10,
+            padx=12,
             pady=6,
         )
 
@@ -246,14 +251,14 @@ def run_app() -> None:
             root._active_card.configure(
                 bg=th()["card_bg"],
                 highlightbackground=th()["card_border"],
-                highlightthickness=1
+                highlightthickness=1,
             )
 
         if hasattr(root, "_labels"):
             for lbl, kind in root._labels:
                 lbl.configure(
                     bg=th()["card_bg"],
-                    fg=th()["text"] if kind == "text" else th()["muted"]
+                    fg=th()["text"] if kind == "text" else th()["muted"],
                 )
 
         if hasattr(root, "_desc_labels"):
@@ -264,36 +269,58 @@ def run_app() -> None:
             for gb in root._grad_buttons:
                 gb.redraw()
 
+        if hasattr(root, "_frame_labels"):
+            for f in root._frame_labels:
+                f.configure(bg=th()["card_bg"])
+
     def toggle_theme():
         theme_name.set("dark" if theme_name.get() == "light" else "light")
         render()
 
-    # Top bar
+    # ── Top bar ──────────────────────────────────────
     topbar = tk.Frame(root, height=60, bg=th()["page_bg"])
     topbar.pack(fill=tk.X)
 
-    toggle_btn = tk.Button(topbar, text="Dark Mode", command=toggle_theme, font=("Arial", 11, "bold"))
-    toggle_btn.pack(side=tk.RIGHT, padx=20, pady=12)
+    # App name in topbar
+    app_title = tk.Label(
+        topbar, text="⚙  CofferdamCalc",
+        font=("Arial", 14, "bold"),
+        bg=th()["page_bg"], fg=th()["text"],
+    )
+    app_title.pack(side=tk.LEFT, padx=24, pady=14)
 
-    # Screen container
+    toggle_btn = tk.Button(
+        topbar, text="🌙 Dark Mode",
+        command=toggle_theme,
+        font=("Arial", 10, "bold"),
+    )
+    toggle_btn.pack(side=tk.RIGHT, padx=20, pady=14)
+
+    # ── Screen container ─────────────────────────────
     screen = tk.Frame(root, bg=th()["page_bg"])
     screen.pack(fill=tk.BOTH, expand=True)
 
     def clear_screen():
         for w in screen.winfo_children():
             w.destroy()
-        root._active_card = None
-        root._labels = []
-        root._desc_labels = []
-        root._grad_buttons = []
+        root._active_card   = None
+        root._labels        = []
+        root._desc_labels   = []
+        root._grad_buttons  = []
+        root._frame_labels  = []
 
     def make_card():
-        card = tk.Frame(screen, bg=th()["card_bg"], highlightthickness=1, highlightbackground=th()["card_border"])
-        card.place(relx=0.5, rely=0.5, anchor="center", width=980, height=560)
+        card = tk.Frame(
+            screen,
+            bg=th()["card_bg"],
+            highlightthickness=1,
+            highlightbackground=th()["card_border"],
+        )
+        card.place(relx=0.5, rely=0.5, anchor="center", width=980, height=570)
         root._active_card = card
         return card
 
-    # --------------- SHEET SCREEN ---------------
+    # ── Sheet Pile Screen ────────────────────────────
     def select_sheet_case(name: str):
         selected_sheet.set(name)
         selected_waler.set("")
@@ -304,81 +331,98 @@ def run_app() -> None:
         current.set("sheet")
         card = make_card()
 
-        title = tk.Label(card, text="Cofferdam Sheet Pile Analysis", font=("Arial", 26),
-                         bg=th()["card_bg"], fg=th()["text"])
-        title.pack(pady=(20, 22))
+        # ── Title ──
+        title = tk.Label(
+            card,
+            text="Cofferdam Sheet Pile Analysis",
+            font=("Arial", 24, "bold"),
+            bg=th()["card_bg"],
+            fg=th()["text"],
+        )
+        title.pack(pady=(28, 20))
         root._labels.append((title, "text"))
 
+        # ── Button grid ──
         grid = tk.Frame(card, bg=th()["card_bg"])
         grid.pack(fill=tk.BOTH, expand=True, padx=30)
+        root._frame_labels.append(grid)
 
-        left_col = [SHEET_PILE_CASES[0], SHEET_PILE_CASES[2], SHEET_PILE_CASES[4]]
+        # Two columns: left = Cases I, II, II W   right = Cases III, IV, IV W
+        left_col  = [SHEET_PILE_CASES[0], SHEET_PILE_CASES[2], SHEET_PILE_CASES[4]]
         right_col = [SHEET_PILE_CASES[1], SHEET_PILE_CASES[3], SHEET_PILE_CASES[5]]
 
         def case_block(parent, case_name, desc, r, c):
             cell = tk.Frame(parent, bg=th()["card_bg"])
-            cell.grid(row=r, column=c, padx=18, pady=14, sticky="nsew")
+            cell.grid(row=r, column=c, padx=16, pady=10, sticky="nsew")
+            root._frame_labels.append(cell)
 
             gb = GradientButton(
                 cell,
                 text=case_name,
                 command=lambda n=case_name: select_sheet_case(n),
-                width=360,
-                height=46,
-                radius=14,
+                width=370,
+                height=44,
+                radius=10,
                 font=("Arial", 12, "bold"),
                 theme_getter=th,
                 selected=(selected_sheet.get() == case_name),
             )
-            gb.pack(pady=(0, 8))
+            gb.pack(pady=(0, 6))
             root._grad_buttons.append(gb)
 
-            d = tk.Label(cell, text=desc, font=("Arial", 10), wraplength=380, justify="center",
-                         bg=th()["card_bg"], fg=th()["muted"])
+            d = tk.Label(
+                cell,
+                text=desc,
+                font=("Arial", 9),
+                wraplength=370,
+                justify="center",
+                bg=th()["card_bg"],
+                fg=th()["muted"],
+            )
             d.pack()
             root._desc_labels.append(d)
 
-        for r in range(3):
-            case_block(grid, left_col[r][0], left_col[r][1], r, 0)
-            case_block(grid, right_col[r][0], right_col[r][1], r, 1)
+        for row in range(3):
+            case_block(grid, left_col[row][0],  left_col[row][1],  row, 0)
+            case_block(grid, right_col[row][0], right_col[row][1], row, 1)
 
         grid.grid_columnconfigure(0, weight=1)
         grid.grid_columnconfigure(1, weight=1)
-        for r in range(3):
-            grid.grid_rowconfigure(r, weight=1)
+        for row in range(3):
+            grid.grid_rowconfigure(row, weight=1)
 
+        # ── Footer ──
         footer = tk.Frame(card, bg=th()["card_bg"])
-        footer.pack(fill=tk.X, pady=(10, 16), padx=30)
+        footer.pack(fill=tk.X, pady=(8, 18), padx=30)
+        root._frame_labels.append(footer)
 
         status = tk.Label(
             footer,
             text=f"Selected: {selected_sheet.get() or '(none)'}",
-            font=("Arial", 11, "bold"),
+            font=("Arial", 11),
             bg=th()["card_bg"],
-            fg=th()["text"],
+            fg=th()["muted"],
         )
         status.pack(side=tk.LEFT)
-        root._labels.append((status, "text"))
+        root._labels.append((status, "muted"))
 
-        # ✅ Next as GradientButton (no more macOS white button issue)
         next_gb = GradientButton(
             footer,
-            text="Next →",
+            text="Next  →",
             command=render_waler,
-            width=200,
-            height=46,
-            radius=14,
+            width=190,
+            height=44,
+            radius=10,
             font=("Arial", 12, "bold"),
             theme_getter=th,
         )
         next_gb.pack(side=tk.RIGHT)
         root._grad_buttons.append(next_gb)
-
         next_gb.set_disabled(not bool(selected_sheet.get()))
 
         apply_theme()
 
-    # --------------- WALER SCREEN ---------------
+    # ── Waler Screen ─────────────────────────────────
     def select_waler_case(name: str):
         selected_waler.set(name)
         render()
@@ -390,52 +434,70 @@ def run_app() -> None:
         current.set("waler")
         card = make_card()
 
-        title = tk.Label(card, text="Select Waler Case", font=("Arial", 24, "bold"),
-                         bg=th()["card_bg"], fg=th()["text"])
-        title.pack(pady=(26, 8))
+        title = tk.Label(
+            card,
+            text="Select Waler Case",
+            font=("Arial", 24, "bold"),
+            bg=th()["card_bg"],
+            fg=th()["text"],
+        )
+        title.pack(pady=(28, 6))
         root._labels.append((title, "text"))
 
-        sub = tk.Label(card, text=f"Sheet Pile Case: {selected_sheet.get()}",
-                       font=("Arial", 12), bg=th()["card_bg"], fg=th()["muted"])
-        sub.pack(pady=(0, 22))
+        sub = tk.Label(
+            card,
+            text=f"Sheet Pile Case: {selected_sheet.get()}",
+            font=("Arial", 11),
+            bg=th()["card_bg"],
+            fg=th()["muted"],
+        )
+        sub.pack(pady=(0, 20))
         root._labels.append((sub, "muted"))
 
         area = tk.Frame(card, bg=th()["card_bg"])
-        area.pack(fill=tk.X, padx=70)
+        area.pack(fill=tk.X, padx=80)
+        root._frame_labels.append(area)
 
         for w_name, w_desc in WALER_CASES:
             row = tk.Frame(area, bg=th()["card_bg"])
-            row.pack(fill=tk.X, pady=12)
+            row.pack(fill=tk.X, pady=10)
+            root._frame_labels.append(row)
 
             gb = GradientButton(
                 row,
                 text=w_name,
                 command=lambda n=w_name: select_waler_case(n),
                 width=820,
-                height=50,
-                radius=14,
+                height=48,
+                radius=10,
                 font=("Arial", 12, "bold"),
                 theme_getter=th,
                 selected=(selected_waler.get() == w_name),
             )
-            gb.pack(pady=(0, 6))
+            gb.pack(pady=(0, 4))
             root._grad_buttons.append(gb)
 
-            d = tk.Label(row, text=w_desc, font=("Arial", 10),
-                         bg=th()["card_bg"], fg=th()["muted"])
+            d = tk.Label(
+                row,
+                text=w_desc,
+                font=("Arial", 9),
+                bg=th()["card_bg"],
+                fg=th()["muted"],
+            )
             d.pack()
             root._desc_labels.append(d)
 
         footer = tk.Frame(card, bg=th()["card_bg"])
-        footer.pack(fill=tk.X, pady=(18, 16), padx=70)
+        footer.pack(fill=tk.X, pady=(20, 18), padx=80)
+        root._frame_labels.append(footer)
 
         back_gb = GradientButton(
             footer,
-            text="← Back",
+            text="←  Back",
             command=render_sheet,
-            width=200,
-            height=46,
-            radius=14,
+            width=190,
+            height=44,
+            radius=10,
             font=("Arial", 12, "bold"),
             theme_getter=th,
         )
@@ -444,20 +506,19 @@ def run_app() -> None:
 
         cont_gb = GradientButton(
             footer,
-            text="Continue →",
+            text="Continue  →",
             command=lambda: messagebox.showinfo(
                 "Selection Confirmed",
                 f"Sheet Pile: {selected_sheet.get()}\nWaler: {selected_waler.get()}",
             ),
-            width=220,
-            height=46,
-            radius=14,
+            width=210,
+            height=44,
+            radius=10,
             font=("Arial", 12, "bold"),
             theme_getter=th,
         )
         cont_gb.pack(side=tk.RIGHT)
         root._grad_buttons.append(cont_gb)
-
         cont_gb.set_disabled(not bool(selected_waler.get()))
 
         apply_theme()
