@@ -1,4 +1,3 @@
-# ui/app_ui.py
 print("✅ LOADED NEW app_ui.py")
 
 import tkinter as tk
@@ -27,20 +26,18 @@ WALER_CASES = [
 # ---------------------------
 THEMES = {
     "light": {
-        "page_bg": "#EEF1F5",     # soft gray like mockup
-        "card_bg": "#F7F7F7",     # light card interior
-        "card_border": "#D6D6D6",
+        "page_bg": "#F0F4F8",
+        "card_bg": "#FFFFFF",
+        "card_border": "#E5E7EB",
         "text": "#1F2937",
         "muted": "#374151",
 
-        # Button "gradient" colors (top -> bottom)
         "btn_top": "#2C49F2",
         "btn_bottom": "#1E3FAE",
         "btn_top_sel": "#355CFF",
         "btn_bottom_sel": "#2449CC",
         "btn_text": "#FFFFFF",
 
-        # Disabled look
         "disabled_bg": "#D6D6D6",
         "disabled_text": "#6B7280",
     },
@@ -106,7 +103,7 @@ class GradientButton(tk.Frame):
             self.canvas.bind("<Button-1>", lambda e: self._command())
             self.canvas.bind("<Enter>", self._on_enter)
             self.canvas.bind("<Leave>", self._on_leave)
-            self.canvas.configure(cursor="hand2")
+            self.canvas.configure(cursor="")
         else:
             self.canvas.configure(cursor="")
 
@@ -123,7 +120,18 @@ class GradientButton(tk.Frame):
         self.canvas.delete("all")
         th = self._theme_getter()
 
-        # Disabled takes precedence
+        card_bg = th["card_bg"]
+        self.canvas.configure(bg=card_bg)
+        self.configure(bg=card_bg)
+
+        # Also walk up parent chain to sync bg
+        try:
+            p = self.master
+            while p is not None:
+                p.configure(bg=card_bg)
+                p = p.master
+        except Exception:
+            pass
         if self._disabled:
             top = th["disabled_bg"]
             bottom = th["disabled_bg"]
@@ -136,7 +144,6 @@ class GradientButton(tk.Frame):
                 top = th["btn_top"]
                 bottom = th["btn_bottom"]
 
-            # Slight hover brighten (very subtle)
             if self._hover and not self._selected:
                 top = _mix_hex(top, "#FFFFFF", 0.07)
                 bottom = _mix_hex(bottom, "#FFFFFF", 0.07)
@@ -147,23 +154,11 @@ class GradientButton(tk.Frame):
         w = self._width
         h = self._height
 
-        # Outer rounded rect in bottom color
-        _rounded_rect(self.canvas, 2, 2, w - 2, h - 2, r, fill=bottom, outline="")
-        # Top overlay (rounded) for gradient feel
-        _rounded_rect(self.canvas, 2, 2, w - 2, int(h * 0.55), r, fill=top, outline="")
+        # Flat solid fill — matches Figma mockup exactly
+        _rounded_rect(self.canvas, 0, 0, w, h, r, fill=top, outline="")
 
-        # Subtle highlight line near top (only when enabled)
-        if not self._disabled:
-            self.canvas.create_line(
-                12, 10, w - 12, 10,
-                fill=_mix_hex(top, "#FFFFFF", 0.25),
-                width=1
-            )
-
-        # Text
         self.canvas.create_text(
-            w // 2,
-            h // 2,
+            w // 2, h // 2,
             text=self._text,
             fill=text_color,
             font=self._font
@@ -179,21 +174,15 @@ class GradientButton(tk.Frame):
 
 
 def _rounded_rect(c: tk.Canvas, x1, y1, x2, y2, r, fill, outline):
-    points = [
-        x1 + r, y1,
-        x2 - r, y1,
-        x2, y1,
-        x2, y1 + r,
-        x2, y2 - r,
-        x2, y2,
-        x2 - r, y2,
-        x1 + r, y2,
-        x1, y2,
-        x1, y2 - r,
-        x1, y1 + r,
-        x1, y1
-    ]
-    return c.create_polygon(points, smooth=True, fill=fill, outline=outline)
+    # Draw using only rectangles and arcs with matching outline to prevent artifacts
+    # Main body
+    c.create_rectangle(x1 + r, y1, x2 - r, y2, fill=fill, outline=fill, width=0)
+    c.create_rectangle(x1, y1 + r, x2, y2 - r, fill=fill, outline=fill, width=0)
+    # Four corners as arcs
+    c.create_arc(x1,     y1,     x1+2*r, y1+2*r, start=90,  extent=90, fill=fill, outline=fill, width=0)
+    c.create_arc(x2-2*r, y1,     x2,     y1+2*r, start=0,   extent=90, fill=fill, outline=fill, width=0)
+    c.create_arc(x1,     y2-2*r, x1+2*r, y2,     start=180, extent=90, fill=fill, outline=fill, width=0)
+    c.create_arc(x2-2*r, y2-2*r, x2,     y2,     start=270, extent=90, fill=fill, outline=fill, width=0)
 
 def _mix_hex(a: str, b: str, t: float) -> str:
     a = a.lstrip("#")
@@ -217,7 +206,7 @@ def run_app() -> None:
     theme_name = tk.StringVar(value="light")
     selected_sheet = tk.StringVar(value="")
     selected_waler = tk.StringVar(value="")
-    current = tk.StringVar(value="sheet")  # sheet | waler
+    current = tk.StringVar(value="sheet")
 
     def th():
         return THEMES[theme_name.get()]
@@ -227,20 +216,8 @@ def run_app() -> None:
         topbar.configure(bg=th()["page_bg"])
         screen.configure(bg=th()["page_bg"])
 
-        toggle_btn.configure(
-            text="Dark Mode" if theme_name.get() == "light" else "Light Mode",
-            bg=th()["card_bg"],
-            fg=th()["text"],
-            activebackground=th()["card_bg"],
-            activeforeground=th()["text"],
-            relief="solid",
-            bd=1,
-            highlightthickness=1,
-            highlightbackground=th()["card_border"],
-            cursor="hand2",
-            padx=10,
-            pady=6,
-        )
+        # Redraw canvas toggle button
+        draw_toggle()
 
         if hasattr(root, "_active_card") and root._active_card is not None:
             root._active_card.configure(
@@ -272,8 +249,21 @@ def run_app() -> None:
     topbar = tk.Frame(root, height=60, bg=th()["page_bg"])
     topbar.pack(fill=tk.X)
 
-    toggle_btn = tk.Button(topbar, text="Dark Mode", command=toggle_theme, font=("Arial", 11, "bold"))
-    toggle_btn.pack(side=tk.RIGHT, padx=20, pady=12)
+    # Canvas-drawn toggle — macOS cannot override canvas item colors
+    toggle_canvas = tk.Canvas(
+        topbar, width=140, height=36, bd=0, highlightthickness=0, cursor=""
+    )
+    toggle_canvas.pack(side=tk.RIGHT, padx=20, pady=12)
+
+    def draw_toggle():
+        toggle_canvas.delete("all")
+        toggle_canvas.configure(bg=th()["page_bg"])
+        _rounded_rect(toggle_canvas, 0, 0, 140, 36, 8, fill="#FFFFFF", outline="#CCCCCC")
+        label = "🌙 Dark Mode" if theme_name.get() == "light" else "☀ Light Mode"
+        toggle_canvas.create_text(70, 18, text=label, fill="#1F2937", font=("Arial", 10, "bold"))
+
+    draw_toggle()
+    toggle_canvas.bind("<Button-1>", lambda e: toggle_theme())
 
     # Screen container
     screen = tk.Frame(root, bg=th()["page_bg"])
@@ -317,20 +307,20 @@ def run_app() -> None:
 
         def case_block(parent, case_name, desc, r, c):
             cell = tk.Frame(parent, bg=th()["card_bg"])
-            cell.grid(row=r, column=c, padx=18, pady=14, sticky="nsew")
+            cell.grid(row=r, column=c, padx=18, pady=6, sticky="nsew")
 
             gb = GradientButton(
                 cell,
                 text=case_name,
                 command=lambda n=case_name: select_sheet_case(n),
                 width=360,
-                height=46,
-                radius=14,
+                height=52,
+                radius=26,
                 font=("Arial", 12, "bold"),
                 theme_getter=th,
                 selected=(selected_sheet.get() == case_name),
             )
-            gb.pack(pady=(0, 8))
+            gb.pack(pady=(0, 4))
             root._grad_buttons.append(gb)
 
             d = tk.Label(cell, text=desc, font=("Arial", 10), wraplength=380, justify="center",
@@ -360,20 +350,18 @@ def run_app() -> None:
         status.pack(side=tk.LEFT)
         root._labels.append((status, "text"))
 
-        # ✅ Next as GradientButton (no more macOS white button issue)
         next_gb = GradientButton(
             footer,
             text="Next →",
             command=render_waler,
             width=200,
             height=46,
-            radius=14,
+            radius=23,
             font=("Arial", 12, "bold"),
             theme_getter=th,
         )
         next_gb.pack(side=tk.RIGHT)
         root._grad_buttons.append(next_gb)
-
         next_gb.set_disabled(not bool(selected_sheet.get()))
 
         apply_theme()
@@ -412,8 +400,8 @@ def run_app() -> None:
                 text=w_name,
                 command=lambda n=w_name: select_waler_case(n),
                 width=820,
-                height=50,
-                radius=14,
+                height=52,
+                radius=26,
                 font=("Arial", 12, "bold"),
                 theme_getter=th,
                 selected=(selected_waler.get() == w_name),
@@ -435,7 +423,7 @@ def run_app() -> None:
             command=render_sheet,
             width=200,
             height=46,
-            radius=14,
+            radius=23,
             font=("Arial", 12, "bold"),
             theme_getter=th,
         )
@@ -451,13 +439,12 @@ def run_app() -> None:
             ),
             width=220,
             height=46,
-            radius=14,
+            radius=23,
             font=("Arial", 12, "bold"),
             theme_getter=th,
         )
         cont_gb.pack(side=tk.RIGHT)
         root._grad_buttons.append(cont_gb)
-
         cont_gb.set_disabled(not bool(selected_waler.get()))
 
         apply_theme()
