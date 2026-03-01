@@ -1,5 +1,24 @@
-print("✅ LOADED NEW app_ui.py")
+"""
+Project: CofferdamCalc
+File: app_ui.py
+Authors: Adetola Aladekoba and Rylan Weldon
+Date Last Modified: 3/1/2026
 
+Description:
+This portion of the program is created to provide a UI to the user and allow them to select
+sheet pile analysis cases and walter configurations through a graphic interface with theme support.
+
+Changes Made: 
+02/22/2026
+Author: Rylan Weldon
+
+Refactored the application from the function based structure into a class based and object oriented design
+by implementing the CofferdamApp class. The CofferdamApp class allowed all of the application states (theme and
+user selections) into different instance variables instead of attaching different custom attributes to the root.
+Also the data structures for both the sheet pile and waler case data from lists of tuples into dictionaries to improve effeciency
+in lookups and to improve readability. Also created a render method to reduce redundent logic in the rendering process
+and used @property to access the current theme. 
+"""
 import tkinter as tk
 from tkinter import messagebox
 
@@ -185,6 +204,8 @@ def blend_colors(a: str, b: str, t: float) -> str:
 # ---------------------------
 # APP
 # ---------------------------
+
+#The Main class that handles the UI theme, state and rendering
 class CofferdamApp:
     def __init__(self):
         self.root = tk.Tk()
@@ -206,10 +227,11 @@ class CofferdamApp:
         self.render_sheet()
         self.root.mainloop()
 
+    #Gives teh current theme that is selected
     @property
     def theme(self):
         return THEMES[self.theme_name.get()]
-
+    #Builds both the static layout portions (the top bar and screen container)
     def build_layout(self):
         self.topbar = tk.Frame(self.root, height=60, bg=self.theme["page_bg"])
         self.topbar.pack(fill=tk.X)
@@ -286,7 +308,7 @@ class CofferdamApp:
             self.render_sheet()
         else:
             self.render_waler()
-
+    #renders the selection screen for the user
     def render_sheet(self):
         self.clear_screen()
         self.current.set("sheet")
