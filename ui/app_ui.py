@@ -18,13 +18,20 @@ user selections) into different instance variables instead of attaching differen
 Also the data structures for both the sheet pile and waler case data from lists of tuples into dictionaries to improve effeciency
 in lookups and to improve readability. Also created a render method to reduce redundent logic in the rendering process
 and used @property to access the current theme. 
+
+02/27/2026
+Author: Adetola Aladekoba
+
+Updated main.py to align with the new class-based UI architecture after the transition from a function-based run_app structure to 
+the CofferdamApp class. Resolved an ImportError caused by main.py attempting to import a removed run_app function. 
+Modified the entry point to correctly instantiate and launch the CofferdamApp class. Verified successful execution from the terminal
+using python3 main.py. Additionally reviewed the project folder structure to maintain modular separation between UI, calculations, and core application files.
 """
+
 import tkinter as tk
 from tkinter import messagebox
 
-# ---------------------------
-# DATA
-# ---------------------------
+
 SHEET_PILE_CASES = {
     "Case I": "Determine wall moment & top waler",
     "Case III": "Determine wall moment and top waler loading after excavation with water on the outside of the wall with two additional walers",
@@ -40,9 +47,6 @@ WALER_CASES = {
     "Waler III": "Waler for segmental arch",
 }
 
-# ---------------------------
-# THEME tuned to your mockup colors
-# ---------------------------
 THEMES = {
     "light": {
         "page_bg": "#F0F4F8",
