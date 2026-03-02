@@ -26,6 +26,10 @@ Updated main.py to align with the new class-based UI architecture after the tran
 the CofferdamApp class. Resolved an ImportError caused by main.py attempting to import a removed run_app function. 
 Modified the entry point to correctly instantiate and launch the CofferdamApp class. Verified successful execution from the terminal
 using python3 main.py. Additionally reviewed the project folder structure to maintain modular separation between UI, calculations, and core application files.
+
+03/01/2026
+Author: Rylan Weldon
+Added clarrifying comments to several portions of the code
 """
 
 import tkinter as tk
