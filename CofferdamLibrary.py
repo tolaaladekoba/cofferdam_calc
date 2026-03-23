@@ -1,3 +1,24 @@
+"""
+Project: CofferdamCalc
+File: CofferdamLibraray.py
+Authors: Rylan Weldon
+Date Last Modified: 3/22/2026
+
+
+
+Description:
+
+This portion of the program is created to provide access to the needed algorithms for each Cofferdam
+Calculation case. The first two cases have been made, both providing intermediate and final values as the output. 
+There is also test cases to ensure both functions worked properly. The arithmetic and nomenclature for the variables for
+both functions was taken directly from the excel sheet with the calculations. 
+
+To Run:
+On a computer with Python installed, ensure that you have the current file installed with the .py file extension
+and double click to run with Python. The output from the test cases will be displayed.
+
+Author: Rylan Weldon
+"""
 import math
 
 def case1(S, L, PA, PP):
