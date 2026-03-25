@@ -33,4 +33,5 @@ ui/app_ui.py – contains the graphical user interface
 CofferdamLibrary.py – contains calculation logic for cofferdam cases
 
 Current Status
-The user interface structure has been set up, and the calculation logic is being developed and tested. The calculation code currently works separately, while full integration of all cases into the UI is still in progress.
+The user interface structure has been set up, and the calculation logic is being developed and tested.
+The calculation code currently works separately, while full integration of all cases into the UI is still in progress.
