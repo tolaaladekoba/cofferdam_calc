@@ -1,7 +1,7 @@
-from ui.app_ui import run_app
+from ui.app_ui import CofferdamApp
 
 def main() -> None:
-    run_app()
+    CofferdamApp()
 
 if __name__ == "__main__":
     main()
