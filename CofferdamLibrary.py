@@ -21,100 +21,342 @@ Author: Rylan Weldon
 """
 import math
 
+
 def case1(S, L, PA, PP):
-    #Case 1: determines cantilever moment when cofferdam is excavated to install top waler
-    #Z, X, p1/p2/p3 calculations
+    # Case 1: determines cantilever moment when cofferdam is excavated to install top waler
     Z = S + (PA * L)
     X = Z / (PP - PA)
     P1 = S * L
     P2 = (PA * L**2) / 2
     P3 = Z * X / 2
-    
-    #Pt, Y, p4, m, Sp calculation
+
     PT = P1 + P2 + P3
     Y = math.sqrt((2 * PT) / (PP - PA))
     P4 = ((PP - PA) * Y**2) / 2
-    M = P1*(X + Y + L/2) + P2*(X + Y + L/3) + P3*(Y + 2*X/3) - P4*Y/3
+    M = (
+        P1 * (X + Y + L / 2)
+        + P2 * (X + Y + L / 3)
+        + P3 * (Y + 2 * X / 3)
+        - P4 * Y / 3
+    )
     SP = L + X + Y
-    
-    return {"Z": Z, "X": X, "P1": P1, "P2": P2, "P3": P3, "PT": PT, "Y": Y, "P4": P4, "M": M, "SP": SP}
+
+    return {
+        "Z": Z,
+        "X": X,
+        "P1": P1,
+        "P2": P2,
+        "P3": P3,
+        "PT": PT,
+        "Y": Y,
+        "P4": P4,
+        "M": M,
+        "SP": SP,
+    }
+
 
 def case2(S, L, PA, PP, D):
-    #Case 2: This program determines wall moment and top water loading after excavation
-    #z, x, p1, p2, p3 calculations
+    # Case 2: determines wall moment and top waler loading after excavation
     Z = S + (PA * D)
     X = Z / (PP - PA)
     P1 = S * D
     P2 = (PA * D**2) / 2
     P3 = Z * X / 2
-    
-    #W, r, pr, pt, y, w1, wh, wl calculation
-    W = ((P1 * (X + D/2)) + (P2 * (X + D/3)) + (P3 * (2 * X/3))) / (X + D - L)
+
+    W = ((P1 * (X + D / 2)) + (P2 * (X + D / 3)) + (P3 * (2 * X / 3))) / (X + D - L)
     R = P1 + P2 + P3 - W
     PR = R / X
     PT = P1 + P2 + P3
     Y = math.sqrt((2 * PT) / (PP - PA))
-    W1 = Y * 5
     WH = W + (0.005 * W)
     WL = W - (0.005 * W)
+
     yVals = []
     mVals = []
-    count = 0
     step = 0.0208
-    
-    current = L
+
     if L < D:
         currY = L
-        #for second subroutine (for y=l to d step 0.0208)
         while currY <= D:
             W1 = (S * currY) + (PA * currY**2 / 2)
-            
-            #for third subroutine: (if wh>=W1 and W1 >=wl)
-            if WH >= W1 and W1 >= WL:
-                count = count + 1;
+
+            if WH >= W1 >= WL:
                 yVals.append(currY)
                 M = (W * (currY - L)) - ((S * currY**2) / 2) - ((PA * currY**3) / 6)
                 mVals.append(M)
+
             currY += step
-        if count == 0:
-            print("There are no points of zero shear")
-    else: #for first subroutine (checking if L >= D)
+    else:
         print("For input values there are no points of zero shear")
+
     return {
-        "Z": Z, "X": X, "P1": P1, "P2": P2, "P3": P3, "PT": PT, 
-        "Y": Y, "W": W, "Moments": mVals, "YValues": yVals
+        "Z": Z,
+        "X": X,
+        "P1": P1,
+        "P2": P2,
+        "P3": P3,
+        "PT": PT,
+        "Y": Y,
+        "W": W,
+        "R": R,
+        "PR": PR,
+        "WH": WH,
+        "WL": WL,
+        "Moments": mVals,
+        "YValues": yVals,
     }
 
-#Case1:
-s, l, pa, pp = 300, 60, 75, 280
-results = case1(s, l, pa, pp)
-print("Case 1:")
-print("Inputs: S: "+str(s)+ " L: " +str(l)+ " PA: " +str(pa)+ " PP: "+str(pp));
-print("Case one calculations:")
-print("Z: " + str(round(results["Z"], 2)) + 
-          " X: " + str(round(results["X"], 2)) + 
-          " P1: " + str(round(results["P1"], 2)) + 
-          " P2: " + str(round(results["P2"], 2)) + 
-          " P3: " + str(round(results["P3"], 2)) + " PT: " + str(round(results["PT"], 2)) + 
-          " Y: " + str(round(results["Y"], 2)) + 
-          " P4: " + str(round(results["P4"], 2))+
-          " M: " + str(round(results["M"], 2))+
-          " SP: " +str(round(results["SP"], 2)))
-#Case2 :
-print("\n")
-s, l, pa, pp, dd = 8, 2, 1, 7, 9
-result2 = case2(s, l, pa, pp, dd)
 
-print("Case 2:")
-print("Inputs: s: "+str(s)+ " L: " +str(l)+ " PA: " +str(pa)+ " PP: "+str(pp)+ " DD: "+str(dd));print("Case two calculations:")
-print("Z: " + str(round(result2["Z"], 2)) + 
-      " X: " + str(round(result2["X"], 2)) + 
-      " P1: " + str(round(result2["P1"], 2)) + 
-      " P2: " + str(round(result2["P2"], 2)) + 
-      " P3: " + str(round(result2["P3"], 2)) + 
-      " PT: " + str(round(result2["PT"], 2)) + 
-      " Y: " + str(round(result2["Y"], 2)) + 
-      " W: " + str(round(result2["W"], 2)) + 
-      " M: " + str(result2["Moments"]) + 
-      " Y_shear: " + str(result2["YValues"]))
-testing = input("");
+def case4(S, L, PA, PP, D, DW, L1, L2, L3, L4, L5, L6):
+    # Case 4: determines wall moments and waler loadings for two or more walers
+
+    X = (S + (PA * D)) / (PP - PA)
+    SL1 = S + (PA * L)
+    SL2 = SL1 + (PA * L1)
+    SR = S + (PA * D)
+
+    W1 = (S * L) + (((PA * L) * L) / 2) + ((SL1 * L1) / 2) + (((PA * (L1**2)) / 2) / 3)
+    ML1 = (((S + (PA * L)) * (L1**2)) / 8) + (0.1283 * ((PA * L1) / 2) * (L1**2))
+
+    SL3 = SL2 + (PA * L2)
+    W2 = ((SL1 * L1) / 2) + ((((PA * (L1**2)) / 2) * 2) / 3) + ((SL2 * L2) / 2) + (((PA * (L2**2)) / 2) / 3)
+    ML2 = ((SL2 * (L2**2)) / 8) + (0.1283 * ((PA * L2) / 2) * (L2**2))
+
+    SL4 = SL3 + (PA * L3)
+    W3 = ((SL2 * L2) / 2) + ((((PA * (L2**2)) / 2) * 2) / 3) + ((SL3 * L3) / 2) + (((PA * (L3**2)) / 2) / 3)
+    ML3 = ((SL3 * (L3**2)) / 8) + (0.1283 * ((PA * L3) / 2) * (L3**2))
+
+    SL5 = SL4 + (PA * L4)
+    W4 = ((SL3 * L3) / 2) + ((((PA * (L3**2)) / 2) * 2) / 3) + ((SL4 * L4) / 2) + (((PA * (L4**2)) / 2) / 3)
+    ML4 = ((SL4 * (L4**2)) / 8) + (0.1283 * ((PA * L4) / 2) * (L4**2))
+
+    SL6 = SL5 + (PA * L5)
+    W5 = ((SL4 * L4) / 2) + ((((PA * (L4**2)) / 2) * 2) / 3) + ((SL5 * L5) / 2) + (((PA * (L5**2)) / 2) / 3)
+    ML5 = ((SL5 * (L5**2)) / 8) + (0.1283 * ((PA * L5) / 2) * (L5**2))
+
+    WR = (
+        ((SL6 * L6) * ((L6 / 2) + X))
+        + (((PA * (L6**2)) / 2) * ((L6 / 3) + X))
+        + (((SR * X) / 2) * ((2 / 3) * X))
+    ) / (X + L6)
+
+    W6 = ((SL5 * L5) / 2) + ((((PA * (L5**2)) / 2) * 2) / 3) + WR
+    ML6 = (1 / 12) * (S + (PA * D)) * ((L6 + X) ** 2)
+
+    TP = (
+        (S * D)
+        + ((PA * (D**2)) / 2)
+        + ((SR * X) / 2)
+        - W1
+        - W2
+        - W3
+        - W4
+        - W5
+        - W6
+    ) / X
+
+    WT = W1 + W2 + W3 + W4 + W5 + W6
+
+    return {
+        "X": X,
+        "SL1": SL1,
+        "SL2": SL2,
+        "SL3": SL3,
+        "SL4": SL4,
+        "SL5": SL5,
+        "SL6": SL6,
+        "SR": SR,
+        "W1": W1,
+        "W2": W2,
+        "W3": W3,
+        "W4": W4,
+        "W5": W5,
+        "W6": W6,
+        "WR": WR,
+        "WT": WT,
+        "ML1": ML1,
+        "ML2": ML2,
+        "ML3": ML3,
+        "ML4": ML4,
+        "ML5": ML5,
+        "ML6": ML6,
+        "TP": TP,
+    }
+
+
+def case6(S, PA, PP, D, DW):
+    # Case 6: determines moment and minimum length of sheetpile for a cantilevered bulkhead
+
+    XH = 2000
+    XL = -2000
+
+    if D == 0:
+        raise ValueError("For D = 0 there are no results")
+
+    PW = 60
+    PP_total = PP + PW
+    F = D - DW
+    P0 = (PA * (F**2)) / 2
+    T = S + (PA * F) + ((PA - PW) * DW)
+    M = T / (PP_total - PA)
+    P1 = S * D
+    P2 = ((PA - PW) / 2) * (DW**2)
+    P3 = (T * M) / 2
+    P5 = PA * F * DW
+    L = P0 + P1 + P2 + P3 + P5
+
+    H = (
+        (P0 * (M + DW + (F / 3)))
+        + (P1 * (M + (D / 2)))
+        + (P2 * (M + (DW / 3)))
+        + (P3 * ((2 / 3) * M))
+        + (P5 * (M + (DW / 2)))
+    ) / L
+
+    D1 = 2.5 * D
+
+    return {
+        "XH": XH,
+        "XL": XL,
+        "PW": PW,
+        "PP_total": PP_total,
+        "F": F,
+        "P0": P0,
+        "T": T,
+        "M": M,
+        "P1": P1,
+        "P2": P2,
+        "P3": P3,
+        "P5": P5,
+        "L": L,
+        "H": H,
+        "D1": D1,
+    }
+
+
+if __name__ == "__main__":
+    # Case 1 test
+    s, l, pa, pp = 300, 60, 75, 280
+    results = case1(s, l, pa, pp)
+    print("Case 1:")
+    print("Inputs: S: " + str(s) + " L: " + str(l) + " PA: " + str(pa) + " PP: " + str(pp))
+    print(
+        "Z: " + str(round(results["Z"], 2))
+        + " X: " + str(round(results["X"], 2))
+        + " P1: " + str(round(results["P1"], 2))
+        + " P2: " + str(round(results["P2"], 2))
+        + " P3: " + str(round(results["P3"], 2))
+        + " PT: " + str(round(results["PT"], 2))
+        + " Y: " + str(round(results["Y"], 2))
+        + " P4: " + str(round(results["P4"], 2))
+        + " M: " + str(round(results["M"], 2))
+        + " SP: " + str(round(results["SP"], 2))
+    )
+
+    print()
+
+    # Case 2 test
+    s, l, pa, pp, dd = 8, 2, 1, 7, 9
+    result2 = case2(s, l, pa, pp, dd)
+    print("Case 2:")
+    print("Inputs: S: " + str(s) + " L: " + str(l) + " PA: " + str(pa) + " PP: " + str(pp) + " D: " + str(dd))
+    print(
+        "Z: " + str(round(result2["Z"], 2))
+        + " X: " + str(round(result2["X"], 2))
+        + " P1: " + str(round(result2["P1"], 2))
+        + " P2: " + str(round(result2["P2"], 2))
+        + " P3: " + str(round(result2["P3"], 2))
+        + " PT: " + str(round(result2["PT"], 2))
+        + " Y: " + str(round(result2["Y"], 2))
+        + " W: " + str(round(result2["W"], 2))
+        + " Moments: " + str(result2["Moments"])
+        + " Y_shear: " + str(result2["YValues"])
+    )
+
+    print()
+
+    # Case 4 test
+    s, l, pa, pp, d, dw, l1, l2, l3, l4, l5, l6 = 5, 2, 3, 4, 4, 2, 3, 4, 5, 6, 7, 8
+    result4 = case4(s, l, pa, pp, d, dw, l1, l2, l3, l4, l5, l6)
+
+    print("Case 4:")
+    print(
+        "Inputs: "
+        + "S: " + str(s)
+        + " L: " + str(l)
+        + " PA: " + str(pa)
+        + " PP: " + str(pp)
+        + " D: " + str(d)
+        + " DW: " + str(dw)
+        + " L1: " + str(l1)
+        + " L2: " + str(l2)
+        + " L3: " + str(l3)
+        + " L4: " + str(l4)
+        + " L5: " + str(l5)
+        + " L6: " + str(l6)
+    )
+    print(
+        "X: " + str(round(result4["X"], 2))
+        + " SL1: " + str(round(result4["SL1"], 2))
+        + " SL2: " + str(round(result4["SL2"], 2))
+        + " SL3: " + str(round(result4["SL3"], 2))
+        + " SL4: " + str(round(result4["SL4"], 2))
+        + " SL5: " + str(round(result4["SL5"], 2))
+        + " SL6: " + str(round(result4["SL6"], 2))
+        + " SR: " + str(round(result4["SR"], 2))
+        + " W1: " + str(round(result4["W1"], 2))
+        + " W2: " + str(round(result4["W2"], 2))
+        + " W3: " + str(round(result4["W3"], 2))
+        + " W4: " + str(round(result4["W4"], 2))
+        + " W5: " + str(round(result4["W5"], 2))
+        + " W6: " + str(round(result4["W6"], 2))
+        + " WR: " + str(round(result4["WR"], 2))
+        + " WT: " + str(round(result4["WT"], 2))
+        + " ML1: " + str(round(result4["ML1"], 2))
+        + " ML2: " + str(round(result4["ML2"], 2))
+        + " ML3: " + str(round(result4["ML3"], 2))
+        + " ML4: " + str(round(result4["ML4"], 2))
+        + " ML5: " + str(round(result4["ML5"], 2))
+        + " ML6: " + str(round(result4["ML6"], 2))
+        + " TP: " + str(round(result4["TP"], 2))
+    )
+
+    print()
+
+    # Case 6 test
+    s, l, pa, pp, d, dw, l1, l2, l3, l4, l5, l6 = 5, 2, 3, 4, 4, 2, 3, 4, 5, 6, 7, 8
+    result6 = case6(s, pa, pp, d, dw)
+
+    print("Case 6:")
+    print(
+        "Inputs: "
+        + "S: " + str(s)
+        + " L: " + str(l)
+        + " PA: " + str(pa)
+        + " PP: " + str(pp)
+        + " D: " + str(d)
+        + " DW: " + str(dw)
+        + " L1: " + str(l1)
+        + " L2: " + str(l2)
+        + " L3: " + str(l3)
+        + " L4: " + str(l4)
+        + " L5: " + str(l5)
+        + " L6: " + str(l6)
+    )
+    print(
+        "XH: " + str(round(result6["XH"], 2))
+        + " XL: " + str(round(result6["XL"], 2))
+        + " PW: " + str(round(result6["PW"], 2))
+        + " PP_total: " + str(round(result6["PP_total"], 2))
+        + " F: " + str(round(result6["F"], 2))
+        + " P0: " + str(round(result6["P0"], 2))
+        + " T: " + str(round(result6["T"], 2))
+        + " M: " + str(round(result6["M"], 2))
+        + " P1: " + str(round(result6["P1"], 2))
+        + " P2: " + str(round(result6["P2"], 2))
+        + " P3: " + str(round(result6["P3"], 2))
+        + " P5: " + str(round(result6["P5"], 2))
+        + " L: " + str(round(result6["L"], 2))
+        + " H: " + str(round(result6["H"], 2))
+        + " D1: " + str(round(result6["D1"], 2))
+    )
