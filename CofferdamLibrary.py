@@ -2,7 +2,7 @@
 Project: CofferdamCalc
 File: CofferdamLibraray.py
 Authors: Rylan Weldon
-Date Last Modified: 3/22/2026
+Date Last Modified: 4/2/2026
 
 
 
@@ -105,8 +105,80 @@ def case2(S, L, PA, PP, D):
         "Moments": mVals,
         "YValues": yVals,
     }
-
-
+def case3(S, L, PA, PP, D, DW):
+        F = D-DW
+        
+        PPadj = PP+60 
+        
+        PW = 60
+        Z = S+(PA*F)+((PA-PW)*DW)
+        P0 = (PA * F**2) / 2
+        
+        X = Z/(PP-PA)
+        
+        P1 = S*D
+        P2 = ((PA-PW)/2)*DW**2
+        P3 = Z*X/2
+        P5 = PA*F*DW
+    
+        W = ((P0*(X+DW+F/3))+(P1*(X+D/2))+(P2*(X+DW/3))+(P3*2/3)+(P5*(X+DW/2)))/(X+D-L)
+        R = P0 + P1 + P2 + P3 + P5 - W
+        PR = R/X
+        PT = P1+P2+P3
+        #might have to revise, unsure if have to define in loop
+        WH = W + (0.005 * W)
+        WL = W - (0.005 * W)
+        
+        Ycalculated = 0
+        if (PP - PA) > 0 and PT > 0:
+            Ycalculated = math.sqrt((2 * PT) / (PP - PA))
+        
+        yVals = []
+        mVals = []
+        counter = 0
+        step = 0.0208
+    
+        if L < D:
+            currY = L
+            while currY <= D:
+                W1 = (S * currY) + P0 + (PA * F * (currY - F)) + (((PA - PW) / 2) * (currY - F)**2)
+                
+                if min(WH, WL) <= W1 <= max(WH, WL):
+                    counter += 1
+                    yVals.append(currY)
+                    M = (W * (currY - L)) - ((S * currY**2) / 2) - (P0 * (currY - (2 * F / 3))) - ((PA * F * (currY - F)**2) / 2) - (((PA - PW) / 2) * (currY - F)**3 / 3)
+                    mVals.append(M)
+                currY += step
+                
+            if counter == 0:
+                print("For input values there are no points of zero shear")
+                
+                if Ycalculated > 0:
+                    finalW1 = (S * Ycalculated) + P0 + (PA * F * (Ycalculated - F)) + (((PA - PW) / 2) * (Ycalculated - F)**2)
+                    Matycalc = (W * (Ycalculated - L)) - ((S * Ycalculated**2) / 2) - (P0 * (Ycalculated - (2 * F / 3))) - ((PA * F * (Ycalculated - F)**2) / 2) - (((PA - PW) / 2) * (Ycalculated- F)**3 / 3)
+                    mVals = [Matycalc] 
+                else:
+                    Matd = (W*(D-L))-((S*D**2)/2)-(P0*(D-(2*F/3)))-((PA*F*(D-F)**2)/2)-(((PA-PW)/2)*(D-F)**3/3)
+                    mVals = [Matd]
+    
+        return {
+            "F": F,
+            "PP": PPadj, 
+            "PW": PW, 
+            "Z": Z, 
+            "P0": P0, 
+            "X": X,
+            "P1": P1, 
+            "P2": P2, 
+            "P3": P3, 
+            "P5": P5,
+            "W": W, 
+            "R": R, 
+            "PR": PR,
+            "PT": PT, 
+            "Moments": mVals, 
+            "YValues": yVals
+        }
 def case4(S, L, PA, PP, D, DW, L1, L2, L3, L4, L5, L6):
     # Case 4: determines wall moments and waler loadings for two or more walers
 
@@ -182,7 +254,59 @@ def case4(S, L, PA, PP, D, DW, L1, L2, L3, L4, L5, L6):
         "ML6": ML6,
         "TP": TP,
     }
-
+def case5(S, PA, PP, D):
+    T = S+(PA*D)
+    M = T/(PP-PA)
+    
+    P1 = S * D
+    P2 = (PA * D**2) / 2
+    P3 = (T * M) / 2
+    L = P1 + P2 + P3
+    H = (P1*(M+D/2)+P2*(M+D/3)+P3*(2/3*M))/L
+    
+    #from the excel sheet, only thing found in code
+    XH =2000
+    XL =-2000
+    bestXfound = D
+    minXa = float('inf')
+    
+    X = D
+    while X <= 2.5 * D:
+        Xa =(X**4)-((8*L*(X**2))/(PP-PA))-((12*L*H*X)/(PP-PA))-(4*(L/(PP-PA))**2)
+        #added to not print out every single xa
+        if abs(Xa) < minXa:
+            minXa = abs(Xa)
+            bestXfound = X
+        X +=0.04
+        
+    X = bestXfound
+    ML = D + M + X
+    Z = (X/2)-(L/((PP-PA)*X))
+    Y = math.sqrt(L/((PP-PA)/2))
+    
+    P4 =((PP-PA)/2)*(Y**2)
+    MS =(L*(Y+H))-(P4*(Y/3))
+    
+    VA =L
+    VC =((PP-PA)/2) * (((X**2)-Z)/((2*X)-Z))
+    
+    return {
+        "T": T,
+        "M": M,
+        "P1": P1,
+        "P2": P2,
+        "P3": P3,
+        "L": L,
+        "H": H,
+        "X": X,
+        "ML": ML,
+        "Z": Z,
+        "Y": Y,
+        "P4": P4,
+        "MS": MS,
+        "VA": VA,
+        "VC": VC
+    }
 
 def case6(S, PA, PP, D, DW):
     # Case 6: determines moment and minimum length of sheetpile for a cantilevered bulkhead
@@ -360,3 +484,126 @@ if __name__ == "__main__":
         + " H: " + str(round(result6["H"], 2))
         + " D1: " + str(round(result6["D1"], 2))
     )
+
+def case7c1(R, W, E, S, H, FC, FY, rebarList):
+    csDict = {6: 0.44, 7: 0.6, 8: 0.79, 9: 1, 10: 1.27, 11: 1.56, 14: 2.25, 18: 4}
+    AS = 0
+    for quant, barSize in rebarList:
+        testArea = csDict.get(barSize, 0)
+        AS = AS+quant*testArea
+    P = W * R
+    M = (P * E) / 12
+    TA = 15 * AS
+    IS = TA*((S/2)-3)**2
+    IC = (H * S**3) / 12
+    IT = IS + IC
+    
+    WM = (FC * IT) / (48 * (R**3))
+    PM = (FC * IT) / (48 * (R**2))
+    
+    FA = (1000 * P) / (S * H)
+    FB = (12000 * M * (S / 2)) / IT
+    PG = AS / (S * H)
+    FB_1 = 0.45 * FC
+    FA_1 = 0.34 * (1 + ((PG * FY) / (0.85 * FC))) * FC
+    CS = (FA / FA_1) + (FB / FB_1)
+    EC = (((0.67 * PG * FY) / (0.85 * FC)) + 0.17) * (S - 3)
+    return {
+        #scaled by 1000 to convert to ft-lb
+        "M": M * 1000,
+        "P": P,
+        "AS": AS,
+        "TA": TA,
+        "IS": IS,
+        "IC": IC,
+        "IT": IT,
+        "WM": WM,
+        "PM": PM,
+        "CS": CS,
+        "EC": EC
+    }
+
+def case7c2(R, W, S, H, FC, FY, rebarList, E=3.0):
+    csDict = {6: 0.44, 7: 0.6, 8: 0.79, 9: 1, 10: 1.27, 11: 1.56, 14: 2.25, 18: 4}
+    AS = 0
+    for quant, barSize in rebarList:
+        testArea = csDict.get(barSize, 0)
+        AS = AS+quant*testArea
+
+    P = W*R
+    #rise is radius
+    T = R  
+    M = 0.068 * W * (T**2)
+    TA = 15 * AS
+    IS = TA * ((S / 2) - 3)**2
+    IC = (H * S**3) / 12
+    IT = IS + IC
+    
+    WM = (FC * IT) / (48 * (R**3))
+    
+    FA = (1000 * P) / (S * H)
+    FB = (12000 * M * (S / 2)) / IT
+    PG = AS / (S * H)
+    FB_1 = 0.45 * FC
+    FA_1 = 0.34 * (1 + ((PG * FY) / (0.85 * FC))) * FC
+    CS = (FA / FA_1) + (FB / FB_1)
+    EC = (((0.67 * PG * FY) / (0.85 * FC)) + 0.17) * (S - 3)
+    
+    return {
+        #scaled by 1000 to convert to ft-lb
+        "M": M * 1000,
+        "P": P,
+        "AS": AS,
+        "TA": TA,
+        "IS": IS,
+        "IC": IC,
+        "IT": IT,
+        "WM": WM,
+        "CS": CS,
+        "EC": EC
+    }
+
+def case7c3(R, W, T, C, S, H, FC, FY, rebarList, E=3.0):
+    csDict = {6: 0.44, 7: 0.6, 8: 0.79, 9: 1, 10: 1.27, 11: 1.56, 14: 2.25, 18: 4.00}
+    AS = 0
+    for quant, barSize in rebarList:
+        testArea = csDict.get(barSize, 0)
+        AS = AS+quant*testArea
+    
+    P = W*R
+    M = 0.068*W*(T**2)
+    TA = 15 * AS
+    IS = TA * ((S / 2) - 3)**2
+    IC = (H * S**3) / 12
+    IT = IS + IC
+    
+    try:
+        AG = (C / 2) / math.sqrt((R**2) - (C / 2)**2)
+        AD = math.degrees(math.atan(AG))#this is for pis estimate
+    except Error:
+        AD = 90
+        
+    WM = ((FC*IT)/(144*(R**3)))*(((180**2)/(AD**2))-1)
+    
+    FA = (1000*P)/(S*H)
+    FB = (12000 * M * (S / 2)) / IT
+    PG = AS / (S * H)
+    FB_1 = 0.45 * FC
+    FA_1 = 0.34 * (1 + ((PG * FY) / (0.85 * FC))) * FC
+    CS = (FA / FA_1) + (FB / FB_1)
+    EC = (((0.67 * PG * FY) / (0.85 * FC)) + 0.17) * (S - 3)
+    
+    return {
+        #scaled by 1000 to convert to ft-lb
+        "M": M*1000,
+        "P": P,
+        "AS": AS,
+        "TA": TA,
+        "IS": IS,
+        "IC": IC,
+        "IT": IT,
+        "AD": AD,
+        "WM": WM,
+        "CS": CS,
+        "EC": EC
+    }
