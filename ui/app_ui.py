@@ -31,16 +31,22 @@ using python3 main.py. Additionally reviewed the project folder structure to mai
 Author: Rylan Weldon
 Added clarrifying comments to several portions of the code
 
-05/03/2026
+04/03/2026
 Author: Rylan Weldon
 Added the seventh case to the UI. Made it so that the waler screen would only show when case seven was selected. Imported the cofferedam library
 and added input screens for all seven cases. Added calculations for all of the cases. Reformed the sized of the window and card to match inputs.
-"""
 
+04/10/2026
+Author: Rylan Weldon
+Added visualizations for case 1, 2, 3, 5,  7(subcases I, II, III). The visualizations vary by case. Also reformated the outputs screen to showcase the outputs
+alongside the visualization information, accomponied with a back button. 
+"""
 import tkinter as tk
 from tkinter import messagebox
 import CofferdamLibrary
-
+import matplotlib.pyplot as plt 
+from matplotlib.patches import Rectangle, Circle 
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 SHEET_PILE_CASES = {
     "Case 1": "Determine cantilever moment when cofferdam is excavated to install top waler",
     "Case 2": "Determine wall moment and top waler loading after excavation",
@@ -306,14 +312,14 @@ class CofferdamApp:
                 highlightbackground=self.theme["card_border"],
             )
 
-        for lbl, kind in self.labels:
-            lbl.configure(
+        for labelText, kind in self.labels:
+            labelText.configure(
                 bg=self.theme["card_bg"],
                 fg=self.theme["text"] if kind == "text" else self.theme["muted"],
             )
 
-        for lbl in self.desc_labels:
-            lbl.configure(bg=self.theme["card_bg"], fg=self.theme["muted"])
+        for labelText in self.desc_labels:
+            labelText.configure(bg=self.theme["card_bg"], fg=self.theme["muted"])
         for name, ent in self.input_entries.items(): 
             ent.configure(bg=self.theme["page_bg"], fg=self.theme["text"], insertbackground=self.theme["text"])        
         for gb in self.grad_buttons:
@@ -426,7 +432,7 @@ class CofferdamApp:
     def render_waler(self):
         if not self.selected_sheet.get():
             return
-
+        #for cleaning the screen
         self.clear_screen()
         self.current.set("waler")
         card = self.make_card()
@@ -434,7 +440,7 @@ class CofferdamApp:
         title = tk.Label(
             card,
             text="Select Waler Case",
-            font=("Arial", 24, "bold"),
+            font=("Arial", 23, "bold"),
             bg=self.theme["card_bg"],
             fg=self.theme["text"],
         )
@@ -443,8 +449,8 @@ class CofferdamApp:
 
         sub = tk.Label(
             card,
-            text=f"Sheet Pile Case: {self.selected_sheet.get()}",
-            font=("Arial", 12),
+            text="Sheet Pile Case: "+self.selected_sheet.get(),
+            font=("Arial", 11),
             bg=self.theme["card_bg"],
             fg=self.theme["muted"],
         )
@@ -482,7 +488,7 @@ class CofferdamApp:
             self.desc_labels.append(d)
 
         footer = tk.Frame(card, bg=self.theme["card_bg"])
-        footer.pack(fill=tk.X, pady=(18, 16), padx=70)
+        footer.pack(fill=tk.X, pady=(18, 17), padx=69)
 
         back_btn = GradientButton(
             footer,
@@ -521,62 +527,198 @@ class CofferdamApp:
         sheet = self.selected_sheet.get()
         waler = self.selected_waler.get()
 
-        header_text = f"Parameters for {sheet}" + (f" - {waler}" if waler else "")
-        title = tk.Label(card, text=header_text, font=("Arial", 22, "bold"), bg=self.theme["card_bg"], fg=self.theme["text"])
+        if waler:
+            headerText = "Results for "+sheet+" - "+waler+""
+        else:
+            headerText = "Results for "+sheet+""
+        title = tk.Label(card, text=headerText, font=("Arial", 21, "bold"), bg=self.theme["card_bg"], fg=self.theme["text"])
         title.pack(pady=(20, 10))
         self.labels.append((title, "text"))
 
         form_area = tk.Frame(card, bg=self.theme["card_bg"])
         form_area.pack(fill=tk.BOTH, expand=True, padx=120)
         fields = []
-        if sheet == "Case 1": fields = ["S", "L", "PA", "PP"]
-        elif sheet == "Case 2": fields = ["S", "L", "PA", "PP", "D"]
-        elif sheet == "Case 3": fields = ["S", "L", "PA", "PP", "D", "DW"]
-        elif sheet == "Case 4": fields = ["S", "L", "PA", "PP", "D", "DW", "L1", "L2", "L3", "L4", "L5", "L6"]
-        elif sheet == "Case 5": fields = ["S", "PA", "PP", "D"]
-        elif sheet == "Case 6": fields = ["S", "PA", "PP", "D", "DW"]
+        if sheet == "Case 1": 
+            fields = ["S", "L", "PA", "PP"]
+        elif sheet == "Case 2": 
+            fields = ["S", "L", "PA", "PP", "D"]
+        elif sheet == "Case 3": 
+            fields = ["S", "L", "PA", "PP", "D", "DW"]
+        elif sheet == "Case 4": 
+            fields = ["S", "L", "PA", "PP", "D", "DW", "L1", "L2", "L3", "L4", "L5", "L6"]
+        elif sheet == "Case 5": 
+            fields = ["S", "PA", "PP", "D"]
+        elif sheet == "Case 6": 
+            fields = ["S", "PA", "PP", "D", "DW"]
         elif sheet == "Case 7":
-            if waler == "Waler I": fields = ["R", "W", "E", "S", "H", "FC", "FY", "rebarList"]
-            elif waler == "Waler II": fields = ["R", "W", "S", "H", "FC", "FY", "rebarList"]
-            elif waler == "Waler III": fields = ["R", "W", "T", "C", "S", "H", "FC", "FY", "rebarList"]
+            if waler == "Waler I": 
+                fields = ["R", "W", "E", "S", "H", "FC", "FY", "rebarList"]
+            elif waler == "Waler II": 
+                fields = ["R", "W", "S", "H", "FC", "FY", "rebarList"]
+            elif waler == "Waler III": 
+                fields = ["R", "W", "T", "C", "S", "H", "FC", "FY", "rebarList"]
 
         #after inputs are confirmed, remove
         if not fields:
-            lbl = tk.Label(form_area, text="Inputs not yet defined for this case.", font=("Arial", 12), bg=self.theme["card_bg"], fg=self.theme["muted"])
-            lbl.pack(pady=40)
-            self.labels.append((lbl, "muted"))
+            labelText = tk.Label(form_area, text="Inputs are not defined for case.", font=("Arial", 12), bg=self.theme["card_bg"], fg=self.theme["muted"])
+            labelText.pack(pady=40)
+            self.labels.append((labelText, "muted"))
         else:
             for f in fields:
+                #for thhe field mapping
                 row = tk.Frame(form_area, bg=self.theme["card_bg"])
                 row.pack(fill=tk.X, pady=8)
                 label_text = f + (" (Qty, Size e.g., '2,8')" if f == "rebarList" else "") + ":"
-                lbl = tk.Label(row, text=label_text, width=25, anchor="e", font=("Arial", 12), bg=self.theme["card_bg"], fg=self.theme["text"])
-                lbl.pack(side=tk.LEFT, padx=15)
-                self.labels.append((lbl, "text"))
+                labelText = tk.Label(row, text=label_text, width=25, anchor="e", font=("Arial", 12), bg=self.theme["card_bg"], fg=self.theme["text"])
+                labelText.pack(side=tk.LEFT, padx=15)
+                self.labels.append((labelText, "text"))
                 ent = tk.Entry(row, font=("Arial", 12), bg=self.theme["page_bg"], fg=self.theme["text"], insertbackground=self.theme["text"], relief="flat", highlightthickness=1, highlightbackground=self.theme["card_border"])
                 ent.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=4)
                 self.input_entries[f] = ent
 
         footer = tk.Frame(card, bg=self.theme["card_bg"])
-        footer.pack(fill=tk.X, pady=(18, 16), padx=70)
-        #
-        back_command = self.render_sheet
+        footer.pack(fill=tk.X, pady=(18, 17), padx=69)
+        
+        backButton = self.render_sheet
         if sheet == "Case 7": 
-            back_command = self.render_waler
-        back_btn = GradientButton(footer, text="← Back", command=back_command, theme_getter=lambda: self.theme, width=200, height=46, radius=23)
+            backButton = self.render_waler
+        back_btn = GradientButton(footer, text="← Back", command=backButton, theme_getter=lambda: self.theme, width=200, height=46, radius=23)
         back_btn.pack(side=tk.LEFT)
         self.grad_buttons.append(back_btn)
 
         if fields:
-            calc_btn = GradientButton(footer, text="Calculate →", command=self.execute_calc, theme_getter=lambda: self.theme, width=220, height=46, radius=23)
-            calc_btn.pack(side=tk.RIGHT)
-            self.grad_buttons.append(calc_btn)
+            caclculateButton = GradientButton(footer, text="Calculate →", command=self.execute_calc, theme_getter=lambda: self.theme, width=220, height=46, radius=23)
+            caclculateButton.pack(side=tk.RIGHT)
+            self.grad_buttons.append(caclculateButton)
         self.apply_theme()
-
+    def render_results(self, sheet, waler, kwargs, res):
+        self.clear_screen()
+        self.current.set("results")
+        card = self.make_card()
+    
+        if waler:
+            headerText = "Results for "+sheet+" - "+waler+""
+        else:
+            headerText = "Results for "+sheet+""
+        title = tk.Label(card, text=headerText, font=("Arial", 21, "bold"), bg=self.theme["card_bg"], fg=self.theme["text"])
+        title.pack(pady=(20, 10))
+        self.labels.append((title, "text"))
+    
+        #creates the split for the results layout
+        content_area = tk.Frame(card, bg=self.theme["card_bg"])
+        content_area.pack(fill=tk.BOTH, expand=True, padx=40, pady=10)
+    
+        left_frame = tk.Frame(content_area, bg=self.theme["card_bg"])
+        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+    
+        right_frame = tk.Frame(content_area, bg=self.theme["card_bg"])
+        right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+    
+        #for left side
+        res_canvas = tk.Canvas(left_frame, bg=self.theme["card_bg"], highlightthickness=0)
+        scrollbar = tk.Scrollbar(left_frame, orient="vertical", command=res_canvas.yview)
+        scrollable_frame = tk.Frame(res_canvas, bg=self.theme["card_bg"])
+    
+        scrollable_frame.bind("<Configure>", lambda e: res_canvas.configure(scrollregion=res_canvas.bbox("all")))
+        res_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        res_canvas.configure(yscrollcommand=scrollbar.set)
+    
+        res_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+    
+        for k, v in res.items():
+            if k in ["Moments", "YValues"]: 
+                continue
+            val_str = str(round(v, 4)) if isinstance(v, float) else str(v)
+            row = tk.Frame(scrollable_frame, bg=self.theme["card_bg"])
+            row.pack(fill=tk.X, pady=4, anchor="w")
+            labelText_key = tk.Label(row, text=f"{k}:", font=("Arial", 12, "bold"), bg=self.theme["card_bg"], fg=self.theme["muted"], width=8, anchor="w")
+            labelText_key.pack(side=tk.LEFT)
+            labelText_val = tk.Label(row, text=val_str, font=("Arial", 12), bg=self.theme["card_bg"], fg=self.theme["text"])
+            labelText_val.pack(side=tk.LEFT)
+            self.labels.extend([(labelText_key, "muted"), (labelText_val, "text")])
+    
+        #right side for making the figure
+        fig = plt.figure(figsize=(5, 5))
+        hasPlot = False
+    
+        if sheet == "Case 1":
+            bars = ['P1 (Surcharge)', 'P2 (Active)', 'P3 (Cross)', 'P4 (Passive)']
+            vals = [res.get('P1', 0), res.get('P2', 0), res.get('P3', 0), -res.get('P4', 0)]
+            plt.barh(bars, vals, color=['#E74C3C', '#E74C3C', '#E74C3C', '#3498DB'])
+            plt.axvline(0, color='black', linewidth=1.5)
+            plt.title("Resultant Force Vectors")
+            plt.xlabel("Force Magnitude (lbs/ft)")
+            plt.grid(axis='x', linestyle='--', alpha=0.7)
+            plt.tight_layout()
+            hasPlot = True
+    
+        elif sheet in ["Case 2", "Case 3"]:
+            if 'YValues' in res and 'Moments' in res and len(res['YValues']) > 0:
+                plt.plot(res['Moments'], res['YValues'], color='#2C3E50', linewidth=2.5)
+                plt.gca().invert_yaxis()
+                plt.axvline(0, color='black', linewidth=1.5)
+                plt.fill_betweenx(res['YValues'], res['Moments'], 0, alpha=0.3, color='#3498DB')
+                plt.title(sheet+": Bending Moment Diagram")
+                plt.ylabel("Depth")
+                plt.xlabel("Bending Moment")
+                plt.grid(True, linestyle='--', alpha=0.6)
+                hasPlot = True
+    
+        elif sheet == "Case 5":
+            forces = ['P1 (Sur.)', 'P2 (Act.)', 'P3 (M.)', 'VA (Ten.)', 'VC (Toe)']
+            vals = [res.get('P1', 0), res.get('P2', 0), res.get('P3', 0), -res.get('VA', 0), -res.get('VC', 0)]
+            plt.bar(forces, vals, color=['#E74C3C', '#E74C3C', '#E74C3C', '#2ECC71', '#3498DB'])
+            plt.axhline(0, color='black', linewidth=1)
+            plt.title("Loads vs Reactions")
+            plt.ylabel("Force Magnitude")
+            plt.xticks(rotation=15)
+            plt.tight_layout()
+            hasPlot = True
+    
+        elif sheet == "Case 7":
+            ax = plt.gca()
+            w_val, h_val = kwargs['S'], kwargs['H']
+            rect = Rectangle((0, 0), w_val, h_val, fill=True, color='#BDC3C7', ec='black', lw=2)
+            ax.add_patch(rect)
+    
+            qty, size = kwargs['rebarList'][0]
+            spacing = w_val/(qty+1)
+            rebarRadius = size/16
+            for i in range(qty):
+                circle = Circle(((i+1)*spacing,3),radius=rebarRadius,color='#2C3E50')
+                ax.add_patch(circle)
+    
+            plt.xlim(-2, w_val + 2)
+            plt.ylim(-2, h_val + 2)
+            plt.gca().set_aspect('equal', adjustable='box')
+            plt.title(f"Combined Stress Ratio: {res.get('CS', 0):.3f}")
+            hasPlot = True
+    
+        if hasPlot:
+            #SHOULD embed the plot into the results
+            canvas = FigureCanvasTkAgg(fig, master=right_frame)
+            canvas.draw()
+            canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        else:
+            #will clean up if there isn't a plot
+            plt.close(fig) 
+            no_plot_labelText = tk.Label(right_frame, text="No visualization available for  calculation.", font=("Arial", 12, "italic"), bg=self.theme["card_bg"], fg=self.theme["muted"])
+            no_plot_labelText.pack(expand=True)
+            self.labels.append((no_plot_labelText, "muted"))
+    
+        #for the back button
+        footer = tk.Frame(card, bg=self.theme["card_bg"])
+        footer.pack(fill=tk.X, pady=(18, 16), padx=70)
+    
+        back_btn = GradientButton(footer, text="← Back to Inputs", command=self.render_inputs, theme_getter=lambda: self.theme, width=200, height=46, radius=23)
+        back_btn.pack(side=tk.LEFT)
+        self.grad_buttons.append(back_btn)
+    
+        self.apply_theme()    
     def execute_calc(self):
         try:
             kwargs = {}
-            #for formatting the inputs for rebar list
             for field, entry in self.input_entries.items():
                 val = entry.get().strip()
                 if not val: raise ValueError(f"Field '{field}' cannot be empty.")
@@ -586,26 +728,35 @@ class CofferdamApp:
                     kwargs['rebarList'] = [(int(parts[0].strip()), int(parts[1].strip()))]
                 else:
                     kwargs[field] = float(val)
-                    
+    
             sheet = self.selected_sheet.get()
             waler = self.selected_waler.get()
             res = {}
-
-            if sheet == "Case 1": res = CofferdamLibrary.case1(kwargs['S'], kwargs['L'], kwargs['PA'], kwargs['PP'])
-            elif sheet == "Case 2": res = CofferdamLibrary.case2(kwargs['S'], kwargs['L'], kwargs['PA'], kwargs['PP'], kwargs['D'])
-            elif sheet == "Case 3": res = CofferdamLibrary.case3(kwargs['S'], kwargs['L'], kwargs['PA'], kwargs['PP'], kwargs['D'], kwargs['DW'])
-            elif sheet == "Case 4": res = CofferdamLibrary.case4(kwargs['S'], kwargs['L'], kwargs['PA'], kwargs['PP'], kwargs['D'], kwargs['DW'], kwargs['L1'], kwargs['L2'], kwargs['L3'], kwargs['L4'], kwargs['L5'], kwargs['L6'])
-            elif sheet == "Case 5": res = CofferdamLibrary.case5(kwargs['S'], kwargs['PA'], kwargs['PP'], kwargs['D'])
-            elif sheet == "Case 6": res = CofferdamLibrary.case6(kwargs['S'], kwargs['PA'], kwargs['PP'], kwargs['D'], kwargs['DW'])
+    
+            if sheet == "Case 1": 
+                res = CofferdamLibrary.case1(kwargs['S'], kwargs['L'], kwargs['PA'], kwargs['PP'])
+            elif sheet == "Case 2": 
+                res = CofferdamLibrary.case2(kwargs['S'], kwargs['L'], kwargs['PA'], kwargs['PP'], kwargs['D'])
+            elif sheet == "Case 3": 
+                res = CofferdamLibrary.case3(kwargs['S'], kwargs['L'], kwargs['PA'], kwargs['PP'], kwargs['D'], kwargs['DW'])
+            elif sheet == "Case 4": 
+                res = CofferdamLibrary.case4(kwargs['S'], kwargs['L'], kwargs['PA'], kwargs['PP'], kwargs['D'], kwargs['DW'], kwargs['L1'], kwargs['L2'], kwargs['L3'], kwargs['L4'], kwargs['L5'], kwargs['L6'])
+            elif sheet == "Case 5": 
+                res = CofferdamLibrary.case5(kwargs['S'], kwargs['PA'], kwargs['PP'], kwargs['D'])
+            elif sheet == "Case 6": 
+                res = CofferdamLibrary.case6(kwargs['S'], kwargs['PA'], kwargs['PP'], kwargs['D'], kwargs['DW'])
             elif sheet == "Case 7":
-                if waler == "Waler I": res = CofferdamLibrary.case7c1(kwargs['R'], kwargs['W'], kwargs['E'], kwargs['S'], kwargs['H'], kwargs['FC'], kwargs['FY'], kwargs['rebarList'])
-                elif waler == "Waler II": res = CofferdamLibrary.case7c2(kwargs['R'], kwargs['W'], kwargs['S'], kwargs['H'], kwargs['FC'], kwargs['FY'], kwargs['rebarList'])
-                elif waler == "Waler III": res = CofferdamLibrary.case7c3(kwargs['R'], kwargs['W'], kwargs['T'], kwargs['C'], kwargs['S'], kwargs['H'], kwargs['FC'], kwargs['FY'], kwargs['rebarList'])
-
-            result_str = "\n".join([f"{k}: {round(v, 4) if isinstance(v, float) else v}" for k, v in res.items()])
-            messagebox.showinfo(f"{sheet} Results", result_str)
-
+                if waler == "Waler I": 
+                    res = CofferdamLibrary.case7c1(kwargs['R'], kwargs['W'], kwargs['E'], kwargs['S'], kwargs['H'], kwargs['FC'], kwargs['FY'], kwargs['rebarList'])
+                elif waler == "Waler II": 
+                    res = CofferdamLibrary.case7c2(kwargs['R'], kwargs['W'], kwargs['S'], kwargs['H'], kwargs['FC'], kwargs['FY'], kwargs['rebarList'])
+                elif waler == "Waler III": 
+                    res = CofferdamLibrary.case7c3(kwargs['R'], kwargs['W'], kwargs['T'], kwargs['C'], kwargs['S'], kwargs['H'], kwargs['FC'], kwargs['FY'], kwargs['rebarList'])
+    
+            
+            self.render_results(sheet, waler, kwargs, res)
+    
         except Exception as e:
-            messagebox.showerror("Calculation Error", f"An error occurred: {e}")    
+            messagebox.showerror("Calculation Error", "A error occurred: "+e)   
 if __name__ == "__main__":
     CofferdamApp()
