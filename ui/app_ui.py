@@ -44,9 +44,10 @@ alongside the visualization information, accomponied with a back button.
 import tkinter as tk
 from tkinter import messagebox
 import CofferdamLibrary
-import matplotlib.pyplot as plt 
-from matplotlib.patches import Rectangle, Circle 
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle, Circle
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 SHEET_PILE_CASES = {
     "Case 1": "Determine cantilever moment when cofferdam is excavated to install top waler",
     "Case 2": "Determine wall moment and top waler loading after excavation",
@@ -94,9 +95,7 @@ THEMES = {
     },
 }
 
-# ---------------------------
-# Rounded "gradient" button using Canvas
-# ---------------------------
+
 class GradientButton(tk.Frame):
     def __init__(
         self,
@@ -169,14 +168,9 @@ class GradientButton(tk.Frame):
             fill_color = th["disabled_bg"]
             text_color = th["disabled_text"]
         else:
-            if self._selected:
-                fill_color = th["btn_top_sel"]
-            else:
-                fill_color = th["btn_top"]
-
+            fill_color = th["btn_top_sel"] if self._selected else th["btn_top"]
             if self._hover and not self._selected:
                 fill_color = blend_colors(fill_color, "#FFFFFF", 0.07)
-
             text_color = th["btn_text"]
 
         r = self._radius
@@ -221,11 +215,6 @@ def blend_colors(a: str, b: str, t: float) -> str:
     return f"#{rr:02x}{rg:02x}{rb:02x}"
 
 
-# ---------------------------
-# APP
-# ---------------------------
-
-#The Main class that handles the UI theme, state and rendering
 class CofferdamApp:
     def __init__(self):
         self.root = tk.Tk()
@@ -243,15 +232,15 @@ class CofferdamApp:
         self.desc_labels = []
         self.grad_buttons = []
         self.input_entries = {}
+
         self.build_layout()
         self.render_sheet()
         self.root.mainloop()
 
-    #Gives teh current theme that is selected
     @property
     def theme(self):
         return THEMES[self.theme_name.get()]
-    #Builds both the static layout portions (the top bar and screen container)
+
     def build_layout(self):
         self.topbar = tk.Frame(self.root, height=60, bg=self.theme["page_bg"])
         self.topbar.pack(fill=tk.X)
@@ -320,8 +309,14 @@ class CofferdamApp:
 
         for labelText in self.desc_labels:
             labelText.configure(bg=self.theme["card_bg"], fg=self.theme["muted"])
-        for name, ent in self.input_entries.items(): 
-            ent.configure(bg=self.theme["page_bg"], fg=self.theme["text"], insertbackground=self.theme["text"])        
+
+        for _, ent in self.input_entries.items():
+            ent.configure(
+                bg=self.theme["page_bg"],
+                fg=self.theme["text"],
+                insertbackground=self.theme["text"]
+            )
+
         for gb in self.grad_buttons:
             gb.redraw()
 
@@ -330,9 +325,9 @@ class CofferdamApp:
             self.render_sheet()
         elif self.current.get() == "waler":
             self.render_waler()
-        else: 
-            self.render_inputs() 
-    #renders the selection screen for the user
+        else:
+            self.render_inputs()
+
     def render_sheet(self):
         self.clear_screen()
         self.current.set("sheet")
@@ -383,7 +378,8 @@ class CofferdamApp:
             )
             d.pack()
             self.desc_labels.append(d)
-        numberOfRows = (len(keys)+1)
+
+        numberOfRows = len(keys) + 1
         for r in range(numberOfRows):
             if r < len(left_col):
                 case_block(grid, left_col[r], r, 0)
@@ -411,7 +407,6 @@ class CofferdamApp:
         next_btn = GradientButton(
             footer,
             text="Next →",
-            #for the odd case
             command=lambda: self.render_waler() if self.selected_sheet.get() == "Case 7" else self.render_inputs(),
             theme_getter=lambda: self.theme,
             width=200,
@@ -432,7 +427,7 @@ class CofferdamApp:
     def render_waler(self):
         if not self.selected_sheet.get():
             return
-        #for cleaning the screen
+
         self.clear_screen()
         self.current.set("waler")
         card = self.make_card()
@@ -449,7 +444,7 @@ class CofferdamApp:
 
         sub = tk.Label(
             card,
-            text="Sheet Pile Case: "+self.selected_sheet.get(),
+            text="Sheet Pile Case: " + self.selected_sheet.get(),
             font=("Arial", 11),
             bg=self.theme["card_bg"],
             fg=self.theme["muted"],
@@ -520,6 +515,7 @@ class CofferdamApp:
     def select_waler_case(self, name):
         self.selected_waler.set(name)
         self.render()
+
     def render_inputs(self):
         self.clear_screen()
         self.current.set("inputs")
@@ -527,236 +523,710 @@ class CofferdamApp:
         sheet = self.selected_sheet.get()
         waler = self.selected_waler.get()
 
-        if waler:
-            headerText = "Results for "+sheet+" - "+waler+""
-        else:
-            headerText = "Results for "+sheet+""
-        title = tk.Label(card, text=headerText, font=("Arial", 21, "bold"), bg=self.theme["card_bg"], fg=self.theme["text"])
+        headerText = f"Results for {sheet}" if not waler else f"Results for {sheet} - {waler}"
+        title = tk.Label(
+            card,
+            text=headerText,
+            font=("Arial", 21, "bold"),
+            bg=self.theme["card_bg"],
+            fg=self.theme["text"]
+        )
         title.pack(pady=(20, 10))
         self.labels.append((title, "text"))
 
         form_area = tk.Frame(card, bg=self.theme["card_bg"])
         form_area.pack(fill=tk.BOTH, expand=True, padx=120)
+
         fields = []
-        if sheet == "Case 1": 
+        if sheet == "Case 1":
             fields = ["S", "L", "PA", "PP"]
-        elif sheet == "Case 2": 
+        elif sheet == "Case 2":
             fields = ["S", "L", "PA", "PP", "D"]
-        elif sheet == "Case 3": 
+        elif sheet == "Case 3":
             fields = ["S", "L", "PA", "PP", "D", "DW"]
-        elif sheet == "Case 4": 
+        elif sheet == "Case 4":
             fields = ["S", "L", "PA", "PP", "D", "DW", "L1", "L2", "L3", "L4", "L5", "L6"]
-        elif sheet == "Case 5": 
+        elif sheet == "Case 5":
             fields = ["S", "PA", "PP", "D"]
-        elif sheet == "Case 6": 
+        elif sheet == "Case 6":
             fields = ["S", "PA", "PP", "D", "DW"]
         elif sheet == "Case 7":
-            if waler == "Waler I": 
+            if waler == "Waler I":
                 fields = ["R", "W", "E", "S", "H", "FC", "FY", "rebarList"]
-            elif waler == "Waler II": 
+            elif waler == "Waler II":
                 fields = ["R", "W", "S", "H", "FC", "FY", "rebarList"]
-            elif waler == "Waler III": 
+            elif waler == "Waler III":
                 fields = ["R", "W", "T", "C", "S", "H", "FC", "FY", "rebarList"]
 
-        #after inputs are confirmed, remove
         if not fields:
-            labelText = tk.Label(form_area, text="Inputs are not defined for case.", font=("Arial", 12), bg=self.theme["card_bg"], fg=self.theme["muted"])
+            labelText = tk.Label(
+                form_area,
+                text="Inputs are not defined for case.",
+                font=("Arial", 12),
+                bg=self.theme["card_bg"],
+                fg=self.theme["muted"]
+            )
             labelText.pack(pady=40)
             self.labels.append((labelText, "muted"))
         else:
             for f in fields:
-                #for thhe field mapping
                 row = tk.Frame(form_area, bg=self.theme["card_bg"])
                 row.pack(fill=tk.X, pady=8)
+
                 label_text = f + (" (Qty, Size e.g., '2,8')" if f == "rebarList" else "") + ":"
-                labelText = tk.Label(row, text=label_text, width=25, anchor="e", font=("Arial", 12), bg=self.theme["card_bg"], fg=self.theme["text"])
+                labelText = tk.Label(
+                    row,
+                    text=label_text,
+                    width=25,
+                    anchor="e",
+                    font=("Arial", 12),
+                    bg=self.theme["card_bg"],
+                    fg=self.theme["text"]
+                )
                 labelText.pack(side=tk.LEFT, padx=15)
                 self.labels.append((labelText, "text"))
-                ent = tk.Entry(row, font=("Arial", 12), bg=self.theme["page_bg"], fg=self.theme["text"], insertbackground=self.theme["text"], relief="flat", highlightthickness=1, highlightbackground=self.theme["card_border"])
+
+                ent = tk.Entry(
+                    row,
+                    font=("Arial", 12),
+                    bg=self.theme["page_bg"],
+                    fg=self.theme["text"],
+                    insertbackground=self.theme["text"],
+                    relief="flat",
+                    highlightthickness=1,
+                    highlightbackground=self.theme["card_border"]
+                )
                 ent.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=4)
                 self.input_entries[f] = ent
 
         footer = tk.Frame(card, bg=self.theme["card_bg"])
         footer.pack(fill=tk.X, pady=(18, 17), padx=69)
-        
-        backButton = self.render_sheet
-        if sheet == "Case 7": 
-            backButton = self.render_waler
-        back_btn = GradientButton(footer, text="← Back", command=backButton, theme_getter=lambda: self.theme, width=200, height=46, radius=23)
+
+        backButton = self.render_sheet if sheet != "Case 7" else self.render_waler
+
+        back_btn = GradientButton(
+            footer,
+            text="← Back",
+            command=backButton,
+            theme_getter=lambda: self.theme,
+            width=200,
+            height=46,
+            radius=23
+        )
         back_btn.pack(side=tk.LEFT)
         self.grad_buttons.append(back_btn)
 
         if fields:
-            caclculateButton = GradientButton(footer, text="Calculate →", command=self.execute_calc, theme_getter=lambda: self.theme, width=220, height=46, radius=23)
-            caclculateButton.pack(side=tk.RIGHT)
-            self.grad_buttons.append(caclculateButton)
+            calculateButton = GradientButton(
+                footer,
+                text="Calculate →",
+                command=self.execute_calc,
+                theme_getter=lambda: self.theme,
+                width=220,
+                height=46,
+                radius=23
+            )
+            calculateButton.pack(side=tk.RIGHT)
+            self.grad_buttons.append(calculateButton)
+
         self.apply_theme()
+
+    def _safe_float(self, value, default=0.0):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    def _style_plot(self, ax, title, xlabel="", ylabel=""):
+        ax.set_title(title, fontsize=12, fontweight="bold", pad=8)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.spines["top"].set_alpha(0.5)
+        ax.spines["right"].set_alpha(0.5)
+        ax.grid(True, linestyle="--", alpha=0.25)
+
+    def _get_embedment_or_length_value(self, res):
+        candidate_keys = [
+            "Min Length", "Minimum Length", "Length", "Lmin", "L", "Y", "Y0",
+            "Embedment", "Embedment Depth", "Dmin", "Required Length"
+        ]
+        for key in candidate_keys:
+            if key in res and isinstance(res[key], (int, float)):
+                return float(res[key]), key
+
+        for key, value in res.items():
+            key_lower = str(key).lower()
+            if any(term in key_lower for term in ["length", "embed", "minimum", "required"]):
+                if isinstance(value, (int, float)):
+                    return float(value), key
+
+        return None, None
+
+    def _draw_case2_visual(self, ax, kwargs, res):
+        L = self._safe_float(kwargs.get("L"))
+        D = self._safe_float(kwargs.get("D"))
+        S = self._safe_float(kwargs.get("S"))
+        PA = self._safe_float(kwargs.get("PA"))
+        PP = self._safe_float(kwargs.get("PP"))
+
+        total_depth = max(L + D, 1.0)
+        y_exc = L
+        y_bot = total_depth
+
+        active_top = max(S, 0.0)
+        active_bottom = max(S + PA * L, 0.0)
+        passive_bottom = max(PP * D, 0.0)
+
+        ax.plot([0, 0], [0, y_bot], color="black", linewidth=4, solid_capstyle="round", zorder=5)
+
+        ax.fill_betweenx([0, y_bot], 0, 0.85, color="#D6DBDF", alpha=0.35, zorder=1)
+
+        ax.fill(
+            [0, active_top, active_bottom, 0],
+            [0, 0, y_exc, y_exc],
+            color="#F8C9C4",
+            alpha=0.9,
+            zorder=2
+        )
+        ax.plot([active_top, active_bottom], [0, y_exc], color="#C0392B", linewidth=2.2, zorder=3)
+
+        ax.fill(
+            [0, -passive_bottom, 0],
+            [y_exc, y_bot, y_bot],
+            color="#BFDFF5",
+            alpha=0.95,
+            zorder=2
+        )
+        ax.plot([0, -passive_bottom], [y_exc, y_bot], color="#1F618D", linewidth=2.2, zorder=3)
+
+        ax.axhline(y=y_exc, color="#A04000", linestyle="--", linewidth=1.6, zorder=6)
+        ax.text(0.2, y_exc + 0.18, "Excavation line", fontsize=9, color="#A04000")
+
+        waler_y = min(0.4, total_depth * 0.15)
+        ax.plot([-0.38, 0.38], [waler_y, waler_y], color="#2E86C1", linewidth=6, solid_capstyle="round", zorder=7)
+        ax.scatter([0], [waler_y], s=32, color="black", zorder=8)
+
+        top_waler_load = None
+        for key in ["W", "W1", "P1", "R", "WR"]:
+            if key in res and isinstance(res[key], (int, float)):
+                top_waler_load = float(res[key])
+                break
+
+        if top_waler_load is not None:
+            ax.text(
+                0.52,
+                waler_y,
+                f"Top waler load = {top_waler_load:.2f}",
+                va="center",
+                fontsize=9,
+                color="#1F2D3D",
+                bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.85),
+                zorder=9
+            )
+        else:
+            ax.text(
+                0.52,
+                waler_y,
+                "Top waler",
+                va="center",
+                fontsize=9,
+                color="#1F2D3D",
+                bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.85),
+                zorder=9
+            )
+
+        ax.text(
+            max(active_bottom * 0.55, 0.55),
+            max(y_exc * 0.45, 0.4),
+            "Active +\nsurcharge",
+            ha="center",
+            va="center",
+            fontsize=10,
+            fontweight="bold",
+            color="#7B241C"
+        )
+
+        if D > 0:
+            ax.text(
+                -max(passive_bottom * 0.5, 0.5),
+                y_exc + D / 2,
+                "Passive\nzone",
+                ha="center",
+                va="center",
+                fontsize=10,
+                fontweight="bold",
+                color="#1B4F72"
+            )
+
+        ax.invert_yaxis()
+        ax.set_xlim(-max(passive_bottom, 1.0) * 1.35, max(active_bottom, 1.0) * 1.6)
+        ax.set_ylim(y_bot + 0.45, -0.45)
+        self._style_plot(ax, "Case 2: Pressure Distribution After Excavation", "Lateral pressure", "Depth")
+
+    def _draw_case3_visual(self, ax, res):
+        if 'YValues' in res and 'Moments' in res and len(res['YValues']) > 0:
+            ax.plot(res['Moments'], res['YValues'], color='#2C3E50', linewidth=2.8)
+            ax.invert_yaxis()
+            ax.axvline(0, color='black', linewidth=1.3)
+            ax.fill_betweenx(res['YValues'], res['Moments'], 0, alpha=0.28, color='#5DADE2')
+            self._style_plot(ax, "Case 3: Bending Moment Diagram", "Bending Moment", "Depth")
+            return True
+        return False
+
+    def _draw_case4_visual(self, ax, kwargs, res):
+        L = self._safe_float(kwargs.get("L"))
+        D = self._safe_float(kwargs.get("D"))
+        total_depth = max(L + D, 1.0)
+
+        waler_depths = []
+        for key in ["L1", "L2", "L3", "L4", "L5", "L6"]:
+            val = self._safe_float(kwargs.get(key), 0.0)
+            if val > 0:
+                waler_depths.append((key, val))
+
+        result_load_keys = ["W1", "W2", "W3", "W4", "W5", "W6"]
+        waler_loads = [self._safe_float(res.get(key), 0.0) for key in result_load_keys[:len(waler_depths)]]
+        max_load = max([abs(v) for v in waler_loads], default=1.0)
+
+        ax.plot([0, 0], [0, total_depth], color="black", linewidth=4, solid_capstyle="round", zorder=5)
+
+        ax.fill_betweenx(
+            [0, total_depth],
+            0,
+            0.95,
+            color="#D6DBDF",
+            alpha=0.42,
+            zorder=1
+        )
+
+        active_width_top = 1.0
+        active_width_bottom = 1.85
+        ax.fill(
+            [0, active_width_top, active_width_bottom, 0],
+            [0, 0, L, L],
+            color="#F7D9A8",
+            alpha=0.72,
+            zorder=2
+        )
+
+        if D > 0:
+            passive_width = 1.25
+            ax.fill(
+                [0, -passive_width, 0],
+                [L, total_depth, total_depth],
+                color="#BFDFF5",
+                alpha=0.82,
+                zorder=2
+            )
+
+        ax.axhline(0, color="#239B56", linestyle="-", linewidth=1.8, zorder=6)
+        ax.text(0.18, -0.18, "Ground line", fontsize=9, color="#239B56", va="top")
+
+        ax.axhline(L, color="#A04000", linestyle="--", linewidth=1.6, zorder=6)
+        ax.text(0.22, L + 0.18, "Excavation line", fontsize=9, color="#A04000")
+
+        ax.text(
+            1.15,
+            L / 2 if L > 0 else 0.4,
+            "Active\nzone",
+            fontsize=10,
+            ha="center",
+            va="center",
+            color="#6E2C00",
+            fontweight="bold"
+        )
+
+        if D > 0:
+            ax.text(
+                -0.72,
+                L + D / 2,
+                "Passive\nzone",
+                fontsize=10,
+                ha="center",
+                va="center",
+                color="#1B4F72",
+                fontweight="bold"
+            )
+
+        for idx, (_, depth_val) in enumerate(waler_depths):
+            load_val = waler_loads[idx] if idx < len(waler_loads) else 0.0
+            normalized = abs(load_val) / max_load if max_load > 0 else 0
+            arrow_len = 0.65 + normalized * 1.25
+
+            ax.plot(
+                [-0.35, 0.35],
+                [depth_val, depth_val],
+                color="#2E86C1",
+                linewidth=6,
+                solid_capstyle="round",
+                zorder=7
+            )
+
+            ax.scatter([0], [depth_val], s=35, color="black", zorder=8)
+
+            ax.arrow(
+                0.42,
+                depth_val,
+                arrow_len,
+                0,
+                width=0.018,
+                head_width=0.16,
+                head_length=0.16,
+                length_includes_head=True,
+                color="#CB4335",
+                zorder=7
+            )
+
+            ax.text(
+                0.52 + arrow_len,
+                depth_val,
+                f"W{idx + 1} = {load_val:.1f}",
+                fontsize=9,
+                va="center",
+                ha="left",
+                color="#922B21",
+                bbox=dict(
+                    boxstyle="round,pad=0.2",
+                    fc="white",
+                    ec="none",
+                    alpha=0.85
+                ),
+                zorder=9
+            )
+
+        if "WR" in res:
+            ax.text(
+                1.95,
+                total_depth - 0.45,
+                f"Resultant waler load = {self._safe_float(res['WR']):.1f}",
+                fontsize=9,
+                ha="right",
+                color="#34495E",
+                bbox=dict(
+                    boxstyle="round,pad=0.25",
+                    fc="#F8F9F9",
+                    ec="#D5D8DC",
+                    alpha=0.95
+                )
+            )
+
+        ax.invert_yaxis()
+        ax.set_xlim(-1.8, 2.35)
+        ax.set_ylim(total_depth + 0.45, -0.45)
+        self._style_plot(ax, "Case 4: Multi-Waler Cofferdam Elevation", "Structural schematic", "Depth")
+        ax.set_xticks([])
+        ax.grid(axis="y", linestyle="--", alpha=0.3)
+
+    def _draw_case5_visual(self, ax, res):
+        forces = ['P1 (Sur.)', 'P2 (Act.)', 'P3 (M.)', 'VA (Ten.)', 'VC (Toe)']
+        vals = [res.get('P1', 0), res.get('P2', 0), res.get('P3', 0), -res.get('VA', 0), -res.get('VC', 0)]
+        ax.bar(forces, vals, color=['#E74C3C', '#E74C3C', '#E74C3C', '#2ECC71', '#3498DB'])
+        ax.axhline(0, color='black', linewidth=1)
+        self._style_plot(ax, "Loads vs Reactions", "", "Force Magnitude")
+        plt.setp(ax.get_xticklabels(), rotation=15)
+
+    def _draw_case6_visual(self, ax, kwargs, res):
+        D = self._safe_float(kwargs.get("D"))
+        DW = self._safe_float(kwargs.get("DW"))
+        S = self._safe_float(kwargs.get("S"))
+        PA = self._safe_float(kwargs.get("PA"))
+        PP = self._safe_float(kwargs.get("PP"))
+
+        min_length, length_key = self._get_embedment_or_length_value(res)
+        if min_length is None:
+            min_length = max(D + DW, D + 1.0)
+
+        wall_len = max(min_length, D + 1.0)
+        dredge = D
+
+        active_height = max(dredge, 1.0)
+        passive_height = max(wall_len - dredge, 0.5)
+
+        active_bottom = max(S + PA * active_height, 0.0)
+        passive_bottom = max(PP * passive_height, 0.0)
+
+        ax.plot([0, 0], [0, wall_len], color="black", linewidth=4, solid_capstyle="round", zorder=5)
+
+        ax.fill_betweenx([0, dredge], 0, 0.95, color="#D6DBDF", alpha=0.55, zorder=1)
+        ax.text(0.48, dredge / 2 if dredge > 0 else 0.5, "Retained soil", ha="center", va="center", fontsize=9)
+
+        if DW > 0:
+            ax.axhline(DW, color="#2E86C1", linestyle="--", linewidth=1.5, zorder=6)
+            ax.text(1.18, DW + 0.12, "Water line", color="#2E86C1", fontsize=9)
+
+        ax.axhline(dredge, color="#A04000", linestyle="--", linewidth=1.6, zorder=6)
+        ax.text(1.18, dredge + 0.12, "Dredge / excavation line", color="#A04000", fontsize=9)
+
+        ax.fill(
+            [0, active_bottom, 0],
+            [0, dredge, dredge],
+            color="#F8C9C4",
+            alpha=0.9,
+            zorder=2
+        )
+        ax.plot([0, active_bottom], [0, dredge], color="#C0392B", linewidth=2.1, zorder=3)
+
+        ax.fill(
+            [0, -passive_bottom, 0],
+            [dredge, wall_len, wall_len],
+            color="#BFDFF5",
+            alpha=0.95,
+            zorder=2
+        )
+        ax.plot([0, -passive_bottom], [dredge, wall_len], color="#1F618D", linewidth=2.1, zorder=3)
+
+        ax.text(
+            max(active_bottom * 0.5, 0.45),
+            max(dredge * 0.45, 0.4),
+            "Active\npressure",
+            ha="center",
+            va="center",
+            fontsize=10,
+            fontweight="bold",
+            color="#7B241C"
+        )
+
+        ax.text(
+            -max(passive_bottom * 0.5, 0.45),
+            dredge + passive_height / 2,
+            "Passive\npressure",
+            ha="center",
+            va="center",
+            fontsize=10,
+            fontweight="bold",
+            color="#1B4F72"
+        )
+
+        ax.annotate(
+            f"{length_key or 'Min length'} = {min_length:.2f}",
+            xy=(0, wall_len),
+            xytext=(1.28, wall_len - 0.25),
+            arrowprops=dict(arrowstyle="->", lw=1.4),
+            fontsize=9,
+            bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.85)
+        )
+
+        for key, value in res.items():
+            if isinstance(value, (int, float)) and "moment" in str(key).lower():
+                ax.text(
+                    1.18,
+                    wall_len * 0.72,
+                    f"{key} = {value:.2f}",
+                    fontsize=9,
+                    bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.85)
+                )
+                break
+
+        ax.invert_yaxis()
+        ax.set_xlim(-max(passive_bottom, 1.0) * 1.35, max(active_bottom, 1.0) * 1.55 + 1.1)
+        ax.set_ylim(wall_len + 0.45, -0.45)
+        self._style_plot(ax, "Case 6: Cantilever Bulkhead Pressure Schematic", "Lateral pressure", "Depth")
+
+    def _draw_case7_visual(self, ax, kwargs, res):
+        w_val, h_val = kwargs['S'], kwargs['H']
+        rect = Rectangle((0, 0), w_val, h_val, fill=True, color='#BDC3C7', ec='black', lw=2)
+        ax.add_patch(rect)
+
+        qty, size = kwargs['rebarList'][0]
+        spacing = w_val / (qty + 1)
+        rebarRadius = size / 16
+        for i in range(qty):
+            circle = Circle(((i + 1) * spacing, 3), radius=rebarRadius, color='#2C3E50')
+            ax.add_patch(circle)
+
+        ax.set_xlim(-2, w_val + 2)
+        ax.set_ylim(-2, h_val + 2)
+        ax.set_aspect('equal', adjustable='box')
+        ax.set_title(f"Combined Stress Ratio: {res.get('CS', 0):.3f}", fontsize=12, fontweight="bold")
+
     def render_results(self, sheet, waler, kwargs, res):
         self.clear_screen()
         self.current.set("results")
         card = self.make_card()
-    
-        if waler:
-            headerText = "Results for "+sheet+" - "+waler+""
-        else:
-            headerText = "Results for "+sheet+""
+
+        headerText = f"Results for {sheet}" if not waler else f"Results for {sheet} - {waler}"
         title = tk.Label(card, text=headerText, font=("Arial", 21, "bold"), bg=self.theme["card_bg"], fg=self.theme["text"])
         title.pack(pady=(20, 10))
         self.labels.append((title, "text"))
-    
-        #creates the split for the results layout
+
         content_area = tk.Frame(card, bg=self.theme["card_bg"])
         content_area.pack(fill=tk.BOTH, expand=True, padx=40, pady=10)
-    
+
         left_frame = tk.Frame(content_area, bg=self.theme["card_bg"])
         left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-    
+
         right_frame = tk.Frame(content_area, bg=self.theme["card_bg"])
         right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-    
-        #for left side
+
         res_canvas = tk.Canvas(left_frame, bg=self.theme["card_bg"], highlightthickness=0)
         scrollbar = tk.Scrollbar(left_frame, orient="vertical", command=res_canvas.yview)
         scrollable_frame = tk.Frame(res_canvas, bg=self.theme["card_bg"])
-    
+
         scrollable_frame.bind("<Configure>", lambda e: res_canvas.configure(scrollregion=res_canvas.bbox("all")))
         res_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         res_canvas.configure(yscrollcommand=scrollbar.set)
-    
+
         res_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-    
+
         for k, v in res.items():
-            if k in ["Moments", "YValues"]: 
+            if k in ["Moments", "YValues"]:
                 continue
             val_str = str(round(v, 4)) if isinstance(v, float) else str(v)
+
             row = tk.Frame(scrollable_frame, bg=self.theme["card_bg"])
             row.pack(fill=tk.X, pady=4, anchor="w")
-            labelText_key = tk.Label(row, text=f"{k}:", font=("Arial", 12, "bold"), bg=self.theme["card_bg"], fg=self.theme["muted"], width=8, anchor="w")
+
+            labelText_key = tk.Label(
+                row,
+                text=f"{k}:",
+                font=("Arial", 12, "bold"),
+                bg=self.theme["card_bg"],
+                fg=self.theme["muted"],
+                width=12,
+                anchor="w"
+            )
             labelText_key.pack(side=tk.LEFT)
-            labelText_val = tk.Label(row, text=val_str, font=("Arial", 12), bg=self.theme["card_bg"], fg=self.theme["text"])
+
+            labelText_val = tk.Label(
+                row,
+                text=val_str,
+                font=("Arial", 12),
+                bg=self.theme["card_bg"],
+                fg=self.theme["text"]
+            )
             labelText_val.pack(side=tk.LEFT)
+
             self.labels.extend([(labelText_key, "muted"), (labelText_val, "text")])
-    
-        #right side for making the figure
-        fig = plt.figure(figsize=(5, 5))
+
+        fig = plt.figure(figsize=(7, 5.4))
+        ax = fig.add_subplot(111)
         hasPlot = False
-    
+
         if sheet == "Case 1":
             bars = ['P1 (Surcharge)', 'P2 (Active)', 'P3 (Cross)', 'P4 (Passive)']
             vals = [res.get('P1', 0), res.get('P2', 0), res.get('P3', 0), -res.get('P4', 0)]
-            plt.barh(bars, vals, color=['#E74C3C', '#E74C3C', '#E74C3C', '#3498DB'])
-            plt.axvline(0, color='black', linewidth=1.5)
-            plt.title("Resultant Force Vectors")
-            plt.xlabel("Force Magnitude (lbs/ft)")
-            plt.grid(axis='x', linestyle='--', alpha=0.7)
-            plt.tight_layout()
+            ax.barh(bars, vals, color=['#E74C3C', '#E74C3C', '#E74C3C', '#3498DB'])
+            ax.axvline(0, color='black', linewidth=1.5)
+            self._style_plot(ax, "Resultant Force Vectors", "Force Magnitude (lbs/ft)", "")
             hasPlot = True
-    
-        elif sheet in ["Case 2", "Case 3"]:
-            if 'YValues' in res and 'Moments' in res and len(res['YValues']) > 0:
-                plt.plot(res['Moments'], res['YValues'], color='#2C3E50', linewidth=2.5)
-                plt.gca().invert_yaxis()
-                plt.axvline(0, color='black', linewidth=1.5)
-                plt.fill_betweenx(res['YValues'], res['Moments'], 0, alpha=0.3, color='#3498DB')
-                plt.title(sheet+": Bending Moment Diagram")
-                plt.ylabel("Depth")
-                plt.xlabel("Bending Moment")
-                plt.grid(True, linestyle='--', alpha=0.6)
-                hasPlot = True
-    
+
+        elif sheet == "Case 2":
+            self._draw_case2_visual(ax, kwargs, res)
+            hasPlot = True
+
+        elif sheet == "Case 3":
+            hasPlot = self._draw_case3_visual(ax, res)
+
+        elif sheet == "Case 4":
+            self._draw_case4_visual(ax, kwargs, res)
+            hasPlot = True
+
         elif sheet == "Case 5":
-            forces = ['P1 (Sur.)', 'P2 (Act.)', 'P3 (M.)', 'VA (Ten.)', 'VC (Toe)']
-            vals = [res.get('P1', 0), res.get('P2', 0), res.get('P3', 0), -res.get('VA', 0), -res.get('VC', 0)]
-            plt.bar(forces, vals, color=['#E74C3C', '#E74C3C', '#E74C3C', '#2ECC71', '#3498DB'])
-            plt.axhline(0, color='black', linewidth=1)
-            plt.title("Loads vs Reactions")
-            plt.ylabel("Force Magnitude")
-            plt.xticks(rotation=15)
-            plt.tight_layout()
+            self._draw_case5_visual(ax, res)
             hasPlot = True
-    
+
+        elif sheet == "Case 6":
+            self._draw_case6_visual(ax, kwargs, res)
+            hasPlot = True
+
         elif sheet == "Case 7":
-            ax = plt.gca()
-            w_val, h_val = kwargs['S'], kwargs['H']
-            rect = Rectangle((0, 0), w_val, h_val, fill=True, color='#BDC3C7', ec='black', lw=2)
-            ax.add_patch(rect)
-    
-            qty, size = kwargs['rebarList'][0]
-            spacing = w_val/(qty+1)
-            rebarRadius = size/16
-            for i in range(qty):
-                circle = Circle(((i+1)*spacing,3),radius=rebarRadius,color='#2C3E50')
-                ax.add_patch(circle)
-    
-            plt.xlim(-2, w_val + 2)
-            plt.ylim(-2, h_val + 2)
-            plt.gca().set_aspect('equal', adjustable='box')
-            plt.title(f"Combined Stress Ratio: {res.get('CS', 0):.3f}")
+            self._draw_case7_visual(ax, kwargs, res)
             hasPlot = True
-    
+
         if hasPlot:
-            #SHOULD embed the plot into the results
+            fig.tight_layout(pad=1.2)
             canvas = FigureCanvasTkAgg(fig, master=right_frame)
             canvas.draw()
             canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         else:
-            #will clean up if there isn't a plot
-            plt.close(fig) 
-            no_plot_labelText = tk.Label(right_frame, text="No visualization available for  calculation.", font=("Arial", 12, "italic"), bg=self.theme["card_bg"], fg=self.theme["muted"])
+            plt.close(fig)
+            no_plot_labelText = tk.Label(
+                right_frame,
+                text="No visualization available for calculation.",
+                font=("Arial", 12, "italic"),
+                bg=self.theme["card_bg"],
+                fg=self.theme["muted"]
+            )
             no_plot_labelText.pack(expand=True)
             self.labels.append((no_plot_labelText, "muted"))
-    
-        #for the back button
+
         footer = tk.Frame(card, bg=self.theme["card_bg"])
         footer.pack(fill=tk.X, pady=(18, 16), padx=70)
-    
-        back_btn = GradientButton(footer, text="← Back to Inputs", command=self.render_inputs, theme_getter=lambda: self.theme, width=200, height=46, radius=23)
+
+        back_btn = GradientButton(
+            footer,
+            text="← Back to Inputs",
+            command=self.render_inputs,
+            theme_getter=lambda: self.theme,
+            width=200,
+            height=46,
+            radius=23
+        )
         back_btn.pack(side=tk.LEFT)
         self.grad_buttons.append(back_btn)
-    
-        self.apply_theme()    
+
+        self.apply_theme()
+
     def execute_calc(self):
         try:
             kwargs = {}
             for field, entry in self.input_entries.items():
                 val = entry.get().strip()
-                if not val: raise ValueError(f"Field '{field}' cannot be empty.")
+                if not val:
+                    raise ValueError(f"Field '{field}' cannot be empty.")
+
                 if field == "rebarList":
                     parts = val.split(',')
-                    if len(parts) != 2: raise ValueError("Rebar List must be in \"Qty,Size\" format (ex: 2,8).")
+                    if len(parts) != 2:
+                        raise ValueError('Rebar List must be in "Qty,Size" format (ex: 2,8).')
                     kwargs['rebarList'] = [(int(parts[0].strip()), int(parts[1].strip()))]
                 else:
                     kwargs[field] = float(val)
-    
+
             sheet = self.selected_sheet.get()
             waler = self.selected_waler.get()
             res = {}
-    
-            if sheet == "Case 1": 
+
+            if sheet == "Case 1":
                 res = CofferdamLibrary.case1(kwargs['S'], kwargs['L'], kwargs['PA'], kwargs['PP'])
-            elif sheet == "Case 2": 
+            elif sheet == "Case 2":
                 res = CofferdamLibrary.case2(kwargs['S'], kwargs['L'], kwargs['PA'], kwargs['PP'], kwargs['D'])
-            elif sheet == "Case 3": 
+            elif sheet == "Case 3":
                 res = CofferdamLibrary.case3(kwargs['S'], kwargs['L'], kwargs['PA'], kwargs['PP'], kwargs['D'], kwargs['DW'])
-            elif sheet == "Case 4": 
-                res = CofferdamLibrary.case4(kwargs['S'], kwargs['L'], kwargs['PA'], kwargs['PP'], kwargs['D'], kwargs['DW'], kwargs['L1'], kwargs['L2'], kwargs['L3'], kwargs['L4'], kwargs['L5'], kwargs['L6'])
-            elif sheet == "Case 5": 
+            elif sheet == "Case 4":
+                res = CofferdamLibrary.case4(
+                    kwargs['S'], kwargs['L'], kwargs['PA'], kwargs['PP'],
+                    kwargs['D'], kwargs['DW'],
+                    kwargs['L1'], kwargs['L2'], kwargs['L3'],
+                    kwargs['L4'], kwargs['L5'], kwargs['L6']
+                )
+            elif sheet == "Case 5":
                 res = CofferdamLibrary.case5(kwargs['S'], kwargs['PA'], kwargs['PP'], kwargs['D'])
-            elif sheet == "Case 6": 
+            elif sheet == "Case 6":
                 res = CofferdamLibrary.case6(kwargs['S'], kwargs['PA'], kwargs['PP'], kwargs['D'], kwargs['DW'])
             elif sheet == "Case 7":
-                if waler == "Waler I": 
-                    res = CofferdamLibrary.case7c1(kwargs['R'], kwargs['W'], kwargs['E'], kwargs['S'], kwargs['H'], kwargs['FC'], kwargs['FY'], kwargs['rebarList'])
-                elif waler == "Waler II": 
-                    res = CofferdamLibrary.case7c2(kwargs['R'], kwargs['W'], kwargs['S'], kwargs['H'], kwargs['FC'], kwargs['FY'], kwargs['rebarList'])
-                elif waler == "Waler III": 
-                    res = CofferdamLibrary.case7c3(kwargs['R'], kwargs['W'], kwargs['T'], kwargs['C'], kwargs['S'], kwargs['H'], kwargs['FC'], kwargs['FY'], kwargs['rebarList'])
-    
-            
+                if waler == "Waler I":
+                    res = CofferdamLibrary.case7c1(
+                        kwargs['R'], kwargs['W'], kwargs['E'], kwargs['S'],
+                        kwargs['H'], kwargs['FC'], kwargs['FY'], kwargs['rebarList']
+                    )
+                elif waler == "Waler II":
+                    res = CofferdamLibrary.case7c2(
+                        kwargs['R'], kwargs['W'], kwargs['S'],
+                        kwargs['H'], kwargs['FC'], kwargs['FY'], kwargs['rebarList']
+                    )
+                elif waler == "Waler III":
+                    res = CofferdamLibrary.case7c3(
+                        kwargs['R'], kwargs['W'], kwargs['T'], kwargs['C'],
+                        kwargs['S'], kwargs['H'], kwargs['FC'], kwargs['FY'], kwargs['rebarList']
+                    )
+
             self.render_results(sheet, waler, kwargs, res)
-    
+
         except Exception as e:
-            messagebox.showerror("Calculation Error", "A error occurred: "+e)   
+            messagebox.showerror("Calculation Error", f"An error occurred: {e}")
+
+
 if __name__ == "__main__":
     CofferdamApp()
