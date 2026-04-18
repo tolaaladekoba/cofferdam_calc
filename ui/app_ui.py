@@ -40,6 +40,10 @@ and added input screens for all seven cases. Added calculations for all of the c
 Author: Rylan Weldon
 Added visualizations for case 1, 2, 3, 5,  7(subcases I, II, III). The visualizations vary by case. Also reformated the outputs screen to showcase the outputs
 alongside the visualization information, accomponied with a back button. 
+
+04/18/2026
+Author: Rylan Weldon
+Removed the next button and made the next page render among selection of cofferdam/waler case
 """
 import tkinter as tk
 from tkinter import messagebox
@@ -404,25 +408,15 @@ class CofferdamApp:
         status.pack(side=tk.LEFT)
         self.labels.append((status, "text"))
 
-        next_btn = GradientButton(
-            footer,
-            text="Next →",
-            command=lambda: self.render_waler() if self.selected_sheet.get() == "Case 7" else self.render_inputs(),
-            theme_getter=lambda: self.theme,
-            width=200,
-            height=46,
-            radius=23,
-        )
-        next_btn.pack(side=tk.RIGHT)
-        next_btn.set_disabled(not bool(self.selected_sheet.get()))
-        self.grad_buttons.append(next_btn)
-
         self.apply_theme()
 
     def select_sheet_case(self, name):
         self.selected_sheet.set(name)
         self.selected_waler.set("")
-        self.render()
+        if name == "Case 7":
+            self.render_waler()
+        else:
+            self.render_inputs()
 
     def render_waler(self):
         if not self.selected_sheet.get():
@@ -453,7 +447,7 @@ class CofferdamApp:
         self.labels.append((sub, "muted"))
 
         area = tk.Frame(card, bg=self.theme["card_bg"])
-        area.pack(fill=tk.X, padx=70)
+        area.pack(fill=tk.X, expand=True, padx=70)
 
         for w_name in WALER_CASES:
             row = tk.Frame(area, bg=self.theme["card_bg"])
@@ -497,24 +491,11 @@ class CofferdamApp:
         back_btn.pack(side=tk.LEFT)
         self.grad_buttons.append(back_btn)
 
-        cont_btn = GradientButton(
-            footer,
-            text="Continue →",
-            command=self.render_inputs,
-            theme_getter=lambda: self.theme,
-            width=220,
-            height=46,
-            radius=23,
-        )
-        cont_btn.pack(side=tk.RIGHT)
-        cont_btn.set_disabled(not bool(self.selected_waler.get()))
-        self.grad_buttons.append(cont_btn)
-
         self.apply_theme()
 
     def select_waler_case(self, name):
         self.selected_waler.set(name)
-        self.render()
+        self.render_inputs()
 
     def render_inputs(self):
         self.clear_screen()
