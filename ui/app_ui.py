@@ -44,6 +44,10 @@ alongside the visualization information, accomponied with a back button.
 04/18/2026
 Author: Rylan Weldon
 Removed the next button and made the next page render among selection of cofferdam/waler case
+
+04/19/2026
+Author: Rylan Weldon
+Created a print option for the displayed graphic as well
 """
 import os
 import sys
@@ -53,7 +57,7 @@ import platform
 import subprocess
 import tkinter as tk
 from tkinter import messagebox, filedialog
-
+from matplotlib.backends.backend_pdf import PdfPages
 import CofferdamLibrary
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, Circle
@@ -1041,26 +1045,40 @@ class CofferdamApp:
 
     def print_results(self):
         if not self.last_result_text:
-            messagebox.showinfo("Print Results", "No results available to print yet.")
+            messagebox.showinfo("Print Results", "No results available to print.")
             return
 
         try:
-            with tempfile.NamedTemporaryFile("w", delete=False, suffix=".txt", encoding="utf-8") as temp_file:
-                temp_file.write(self.last_result_text)
-                temp_path = temp_file.name
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf:
+                temp_path = temp_pdf.name
+            
+            with PdfPages(temp_path) as pdf:
+                fig_text = plt.figure(figsize=(8.5, 11))
+                fig_text.text(0.1, 0.95, self.last_result_text, 
+                             fontsize=10, fontfamily='monospace', 
+                             ha='left', va='top', wrap=True)
+                pdf.savefig(fig_text)
+                plt.close(fig_text)
+
+                if self.current_figure:
+                    pdf.savefig(self.current_figure)
 
             system_name = platform.system()
-
             if system_name == "Windows":
-                os.startfile(temp_path, "print")
-            elif system_name == "Darwin":
-                subprocess.run(["lp", temp_path], check=False)
-            else:
-                subprocess.run(["lp", temp_path], check=False)
-
-            messagebox.showinfo("Print Results", "Print command sent.")
+                try:
+                    #will attempt anautomatic print
+                    os.startfile(temp_path, "print")
+                    messagebox.showinfo("Success", "Sent to printer.")
+                except OSError as e:
+                    #fallback to opening os
+                    os.startfile(temp_path)
+                    messagebox.showinfo("Manual Print", "Automatic printing not supported.\nThe report has been opened. Please print it manually")
+            else: #other os
+                subprocess.run(["lpr", temp_path], check=False)
+                messagebox.showinfo("Success", "Sent to printer.")
+                
         except Exception as e:
-            messagebox.showerror("Print Error", f"Could not print results.\n\n{e}")
+            messagebox.showerror("Print Error", f"An unexpected error occurred:\n\n{e}")
 
     def save_plot_png(self):
         if self.current_figure is None:
