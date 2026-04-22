@@ -48,6 +48,10 @@ Removed the next button and made the next page render among selection of cofferd
 04/19/2026
 Author: Rylan Weldon
 Created a print option for the displayed graphic as well
+
+04/20/2026
+Author: Rylan Weldon
+Created descriptive labels instead of acronyms 
 """
 import os
 import sys
@@ -659,75 +663,107 @@ class CofferdamApp:
             right_col.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=16)
 
             def build_column(parent, field_list):
-                for f in field_list:
-                    row = tk.Frame(parent, bg=self.theme["card_bg"])
-                    row.pack(fill=tk.X, pady=8)
-
-                    label_text = f + (" (Qty, Size e.g. 2,8)" if f == "rebarList" else "") + ":"
-                    label = tk.Label(
-                        row,
-                        text=label_text,
-                        font=("Arial", 17, "bold"),
-                        bg=self.theme["card_bg"],
-                        fg=self.theme["text"],
-                        anchor="w",
-                    )
-                    label.pack(anchor="w", pady=(0, 4))
-                    self.labels.append((label, "text"))
-
-                    ent = tk.Entry(
-                        row,
-                        font=("Arial", 17),
-                        bg=self.theme["entry_bg"],
-                        fg=self.theme["text"],
-                        insertbackground=self.theme["text"],
-                        relief="flat",
-                        highlightthickness=1,
-                        highlightbackground=self.theme["entry_border"],
-                        highlightcolor=self.theme["btn_top"],
-                    )
-                    ent.pack(fill=tk.X, ipady=10)
-                    self.input_entries[f] = ent
-
-                    if f in saved_values:
-                        ent.insert(0, saved_values[f])
-
+                    for f in field_list:
+                        row = tk.Frame(parent, bg=self.theme["card_bg"])
+                        row.pack(fill=tk.X, pady=8)
+        
+                        if f == "S":
+                            label_text = "Surcharge Load: " if sheet != "Case 7" else "Width of Waler: "
+                        elif f == "PA":
+                            label_text = "Active Pressure: "
+                        elif f == "PP":
+                            label_text = "Passive Pressure: "
+                        elif f == "L":
+                            label_text = "Depth of Cut: " if sheet == "Case 1" else "Depth to Waler: "
+                        elif f == "D":
+                            label_text = "Excavation Depth: " if sheet in ["Case 2", "Case 3"] else "Depth of Cut"
+                        elif f == "DW":
+                            label_text = "Depth of Water"
+                        elif f == "R":
+                            label_text = "Radius (feet): "
+                        elif f == "W":
+                            label_text = "Uniform Distance Load KIPS/LF: "
+                        elif f == "E":
+                            label_text = "Eccentricity: "
+                        elif f == "H":
+                            label_text = "Height of Waler (inches): "
+                        elif f == "FC":
+                            label_text = "Concrete Compressive Strength: "
+                        elif f == "FY":
+                            label_text = "Steel Yield Stress: "
+                        elif f == "T":
+                            label_text = "Rise of Arch: "
+                        elif f == "C":
+                            label_text = "Chord Length: "
+                        elif f == "rebarList":
+                            label_text = "Rebar List (Qty, Size e.g. 2,8): "
+                        else:
+                            label_text = f + ":"
+        
+                        label = tk.Label(
+                            row,
+                            text=label_text,
+                            font=("Arial", 15, "bold"),
+                            bg=self.theme["card_bg"],
+                            fg=self.theme["text"],
+                            anchor="w",
+                        )
+                        label.pack(anchor="w", pady=(0, 4))
+                        self.labels.append((label, "text"))
+        
+                        ent = tk.Entry(
+                            row,
+                            font=("Arial", 17),
+                            bg=self.theme["entry_bg"],
+                            fg=self.theme["text"],
+                            insertbackground=self.theme["text"],
+                            relief="flat",
+                            highlightthickness=1,
+                            highlightbackground=self.theme["entry_border"],
+                            highlightcolor=self.theme["btn_top"],
+                        )
+                        ent.pack(fill=tk.X, ipady=10)
+                        self.input_entries[f] = ent
+        
+                        if f in saved_values:
+                            ent.insert(0, saved_values[f])
+        
             build_column(left_col, left_fields)
             build_column(right_col, right_fields)
-
-        footer = tk.Frame(card, bg=self.theme["card_bg"])
-        footer.pack(fill=tk.X, padx=40, pady=(10, 20))
-
-        back_command = self.render_sheet if sheet != "Case 7" else self.render_waler
-
-        back_btn = GradientButton(
-            footer,
-            text="← Back",
-            command=lambda: [self.save_current_inputs(), back_command()],
-            theme_getter=lambda: self.theme,
-            width=200,
-            height=50,
-            radius=25,
-            font=("Arial", 13, "bold"),
-        )
-        back_btn.pack(side=tk.LEFT)
-        self.grad_buttons.append(back_btn)
-
-        calc_btn = GradientButton(
-            footer,
-            text="Calculate →",
-            command=self.execute_calc,
-            theme_getter=lambda: self.theme,
-            width=230,
-            height=50,
-            radius=25,
-            font=("Arial", 13, "bold"),
-        )
-        calc_btn.pack(side=tk.RIGHT)
-        self.grad_buttons.append(calc_btn)
-
-        self.apply_theme()
-
+            
+            footer = tk.Frame(card, bg=self.theme["card_bg"])
+            footer.pack(fill=tk.X, padx=40, pady=(10, 20))
+            
+            back_command = self.render_sheet if sheet != "Case 7" else self.render_waler
+            
+            back_btn = GradientButton(
+                footer,
+                text="← Back",
+                command=lambda: [self.save_current_inputs(), back_command()],
+                theme_getter=lambda: self.theme,
+                width=200,
+                height=50,
+                radius=25,
+                font=("Arial", 13, "bold"),
+            )
+            back_btn.pack(side=tk.LEFT)
+            self.grad_buttons.append(back_btn)
+            
+            calc_btn = GradientButton(
+                footer,
+                text="Calculate →",
+                command=self.execute_calc,
+                theme_getter=lambda: self.theme,
+                width=230,
+                height=50,
+                radius=25,
+                font=("Arial", 13, "bold"),
+            )
+            calc_btn.pack(side=tk.RIGHT)
+            self.grad_buttons.append(calc_btn)
+            
+            self.apply_theme()
+    
     def _safe_float(self, value, default=0.0):
         try:
             return float(value)
@@ -1003,6 +1039,47 @@ class CofferdamApp:
         ax.set_title(f"Combined Stress Ratio: {res.get('CS', 0):.3f}", fontsize=13, fontweight="bold")
 
     def format_result_text(self, sheet, waler, kwargs, res):
+        input_labels = {
+            "S":  "Surcharge:        ", 
+            "PA": "Active Pressure:  ", 
+            "PP": "Passive Pressure: ",
+            "L": "Depth of Wale:     ", 
+            "D": "Excavation Depth:  ", 
+            "DW": "Water Depth:      "
+        }
+        result_labels = {
+                "SP": "Point of Zero Shear      ",
+                "X":  "Distance X               ",
+                "Y":  "Distance Y               ",
+                "M":  "Max Moment               ",
+                "MS": "Maximum Moment           ",
+                "W":  "Top Waler Load           ",
+                "PR": "Toe Pressure             ",
+                "ML": "Min Length of Sheet Pile ",
+                "VA": "Max Shear VA             ",
+                "VC": "Max Shear VC             ",
+                "Z":  "Dimension Z              ",
+                "CS": "Combined Stress Ratio    ",
+                "WM": "W-MAX                    ",
+                "PM": "P-MAX                    ",
+                "P1": "P1                       ",
+                "P2": "P2                       ",
+                "P3": "P3                       ",
+                "P4": "P4                       ",
+                "PT": "PT                       ",
+                "P":  "Resultant Load P",
+                "AS": "Area of Steel Reinforcement",
+                "TA": "Transformed Area of Steel",
+                "IS": "Moment of Inertia (Steel)",
+                "IC": "Moment of Inertia (Concrete)",
+                "IT": "Total Moment of Inertia",
+                "EC": "Eccentricity Check",
+                "WM": "Max Allowable Uniform Load",
+                "PM": "Max Allowable Axial Load",
+                "T":  "Pressure at Dredge Line",
+                "L":  "Resultant Horizontal Load",
+                "H":  "Height to Resultant Load",                
+        }        
         lines = []
         header = f"Results for {sheet}" if not waler else f"Results for {sheet} - {waler}"
         lines.append(header)
@@ -1010,16 +1087,20 @@ class CofferdamApp:
         lines.append("")
         lines.append("Inputs:")
         for k, v in kwargs.items():
-            lines.append(f"  {k}: {v}")
+            display_in = input_labels.get(k, k)
+            lines.append(f"  {display_in:<30}: {v}")
+        
         lines.append("")
         lines.append("Results:")
         for k, v in res.items():
             if k in ["Moments", "YValues"]:
                 continue
-            if isinstance(v, float):
-                lines.append(f"  {k}: {round(v, 4)}")
-            else:
-                lines.append(f"  {k}: {v}")
+    
+            #find full word first
+            display_key = result_labels.get(k, k)
+            val = f"{v:.4f}" if isinstance(v, float) else str(v)
+            lines.append(f"  {display_key:<30}: {val}")
+    
         return "\n".join(lines)
 
     def save_results(self):
@@ -1131,39 +1212,50 @@ class CofferdamApp:
 
         results_box = tk.Frame(left_frame, bg=self.theme["card_bg"])
         results_box.pack(fill=tk.BOTH, expand=True)
-
-        for k, v in res.items():
-            if k in ["Moments", "YValues"]:
-                continue
-
-            row = tk.Frame(results_box, bg=self.theme["card_bg"])
-            row.pack(fill=tk.X, pady=6, anchor="w")
-
-            key_label = tk.Label(
-                row,
-                text=f"{k}:",
-                font=("Arial", 15, "bold"),
-                bg=self.theme["card_bg"],
-                fg=self.theme["muted"],
-                width=16,
-                anchor="w"
-            )
-            key_label.pack(side=tk.LEFT)
-            self.labels.append((key_label, "muted"))
-
-            value_text = str(round(v, 4)) if isinstance(v, float) else str(v)
-            val_label = tk.Label(
-                row,
-                text=value_text,
-                font=("Arial", 15),
-                bg=self.theme["card_bg"],
-                fg=self.theme["text"],
-                anchor="w",
-                justify="left",
-                wraplength=470,
-            )
-            val_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
-            self.labels.append((val_label, "text"))
+        display_order = ["ML", "SP", "X", "Y", "Z", "M", "MS", "W", "PR", "VA", "VC", "CS", "WM", "PM", "P1", "P2", "P3", "P4", "PT"]
+        labels = {
+                "SP": "Point of Zero Shear      ",
+                "X":  "Distance X               ",
+                "Y":  "Distance Y               ",
+                "M":  "Max Moment               ",
+                "MS": "Maximum Moment           ",
+                "W":  "Top Waler Load           ",
+                "PR": "Toe Pressure             ",
+                "ML": "Min Length of Sheet Pile ",
+                "VA": "Max Shear VA             ",
+                "VC": "Max Shear VC             ",
+                "Z":  "Dimension Z              ",
+                "CS": "Combined Stress Ratio    ",
+                "WM": "W-MAX                    ",
+                "PM": "P-MAX                    ",
+                "P1": "P1                       ",
+                "P2": "P2                       ",
+                "P3": "P3                       ",
+                "P4": "P4                       ",
+                "PT": "PT                       ",
+                "P":  "Resultant Load P",
+                "AS": "Area of Steel Reinforcement",
+                "TA": "Transformed Area of Steel",
+                "IS": "Moment of Inertia (Steel)",
+                "IC": "Moment of Inertia (Concrete)",
+                "IT": "Total Moment of Inertia",
+                "EC": "Eccentricity Check",
+                "WM": "Max Allowable Uniform Load",
+                "PM": "Max Allowable Axial Load",
+                "T":  "Pressure at Dredge Line",
+                "L":  "Resultant Horizontal Load",
+                "H":  "Height to Resultant Load",                
+        }        
+        all_result_keys = list(res.keys())
+        
+        for key in display_order:
+            if key in res:
+                self._render_result_row(results_box, key, res[key], labels)
+                all_result_keys.remove(key) 
+    
+        for key in all_result_keys:
+            if key not in ["Moments", "YValues"]:
+                self._render_result_row(results_box, key, res[key], labels)
 
         fig = plt.figure(figsize=(7.2, 5.4))
         ax = fig.add_subplot(111)
@@ -1275,7 +1367,35 @@ class CofferdamApp:
         self.grad_buttons.append(print_btn)
 
         self.apply_theme()
-
+    def _render_result_row(self, container, key, value, label_map):
+        row = tk.Frame(container, bg=self.theme["card_bg"])
+        row.pack(fill=tk.X, pady=4, anchor="w")
+    
+        display_name = label_map.get(key, key)
+        
+        #for the output text
+        key_label = tk.Label(
+                row,
+                text=f"{display_name:<30} :",
+                font=("Courier New", 16, "bold"), 
+                bg=self.theme["card_bg"],
+                fg=self.theme["muted"],
+                anchor="w"
+            )
+        key_label.pack(side=tk.LEFT)
+        self.labels.append((key_label, "muted"))
+    
+        val_text = f"{value:.4f}" if isinstance(value, float) else str(value)
+        val_label = tk.Label(
+                row,
+                text=f" {val_text}",
+                font=("Arial", 14),
+                bg=self.theme["card_bg"],
+                fg=self.theme["text"],
+                anchor="w"
+            )
+        val_label.pack(side=tk.LEFT)
+        self.labels.append((val_label, "text"))
     def execute_calc(self):
         try:
             self.save_current_inputs()
