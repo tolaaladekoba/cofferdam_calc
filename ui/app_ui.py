@@ -52,6 +52,10 @@ Created a print option for the displayed graphic as well
 04/20/2026
 Author: Rylan Weldon
 Created descriptive labels instead of acronyms 
+
+04/22/2026
+Author: Rylan Weldon
+Fixed resolution issues and added scrollbar for inputs and outputs
 """
 import os
 import sys
@@ -617,152 +621,107 @@ class CofferdamApp:
         self.clear_screen()
         self.current.set("inputs")
         self.set_nav_title("Input Parameters")
-
+    
         card = self.make_card()
         sheet = self.selected_sheet.get()
         waler = self.selected_waler.get()
         saved_values = self.restore_inputs_for_current_case()
-
+    
         header_text = f"Inputs for {sheet}" if not waler else f"Inputs for {sheet} - {waler}"
-        title = tk.Label(
-            card,
-            text=header_text,
-            font=("Arial", 28, "bold"),
-            bg=self.theme["card_bg"],
-            fg=self.theme["text"]
-        )
+        title = tk.Label(card, text=header_text, font=("Arial", 28, "bold"),
+                             bg=self.theme["card_bg"], fg=self.theme["text"])
         title.pack(pady=(24, 10))
         self.labels.append((title, "text"))
-
+    
         fields = self.get_fields_for_current_case()
-
+    
         form_outer = tk.Frame(card, bg=self.theme["card_bg"])
         form_outer.pack(fill=tk.BOTH, expand=True, padx=20, pady=(5, 5))
-
-        form_area = tk.Frame(form_outer, bg=self.theme["card_bg"])
-        form_area.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.95, relheight=0.85)
-
+    
+        canvas = tk.Canvas(form_outer, bg=self.theme["card_bg"], highlightthickness=0, bd=0)
+        scrollbar = tk.Scrollbar(form_outer, orient="vertical", command=canvas.yview)
+        form_area = tk.Frame(canvas, bg=self.theme["card_bg"])
+    
+        canvas.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+    
+        canvas_window = canvas.create_window((0, 0), window=form_area, anchor="nw")
+    
+        canvas.bind('<Configure>', lambda e: canvas.itemconfig(canvas_window, width=e.width))
+    
+        form_area.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
+    
         if not fields:
-            label = tk.Label(
-                form_area,
-                text="Inputs are not defined for this case.",
-                font=("Arial", 16),
-                bg=self.theme["card_bg"],
-                fg=self.theme["muted"]
-            )
+            label = tk.Label(form_area, text="Inputs are not defined for this case.",
+                                 font=("Arial", 16), bg=self.theme["card_bg"], fg=self.theme["muted"])
             label.pack(pady=40)
             self.labels.append((label, "muted"))
         else:
             mid = math.ceil(len(fields) / 2)
-            left_fields = fields[:mid]
-            right_fields = fields[mid:]
-
+            left_fields = fields[:mid]; right_fields = fields[mid:]
+    
             left_col = tk.Frame(form_area, bg=self.theme["card_bg"])
             right_col = tk.Frame(form_area, bg=self.theme["card_bg"])
-            left_col.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=16)
-            right_col.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=16)
-
+            left_col.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=30)
+            right_col.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=30)
+    
             def build_column(parent, field_list):
-                    for f in field_list:
-                        row = tk.Frame(parent, bg=self.theme["card_bg"])
-                        row.pack(fill=tk.X, pady=8)
-        
-                        if f == "S":
-                            label_text = "Surcharge Load: " if sheet != "Case 7" else "Width of Waler: "
-                        elif f == "PA":
-                            label_text = "Active Pressure: "
-                        elif f == "PP":
-                            label_text = "Passive Pressure: "
-                        elif f == "L":
-                            label_text = "Depth of Cut: " if sheet == "Case 1" else "Depth to Waler: "
-                        elif f == "D":
-                            label_text = "Excavation Depth: " if sheet in ["Case 2", "Case 3"] else "Depth of Cut"
-                        elif f == "DW":
-                            label_text = "Depth of Water"
-                        elif f == "R":
-                            label_text = "Radius (feet): "
-                        elif f == "W":
-                            label_text = "Uniform Distance Load KIPS/LF: "
-                        elif f == "E":
-                            label_text = "Eccentricity: "
-                        elif f == "H":
-                            label_text = "Height of Waler (inches): "
-                        elif f == "FC":
-                            label_text = "Concrete Compressive Strength: "
-                        elif f == "FY":
-                            label_text = "Steel Yield Stress: "
-                        elif f == "T":
-                            label_text = "Rise of Arch: "
-                        elif f == "C":
-                            label_text = "Chord Length: "
-                        elif f == "rebarList":
-                            label_text = "Rebar List (Qty, Size e.g. 2,8): "
-                        else:
-                            label_text = f + ":"
-        
-                        label = tk.Label(
-                            row,
-                            text=label_text,
-                            font=("Arial", 15, "bold"),
-                            bg=self.theme["card_bg"],
-                            fg=self.theme["text"],
-                            anchor="w",
-                        )
-                        label.pack(anchor="w", pady=(0, 4))
-                        self.labels.append((label, "text"))
-        
-                        ent = tk.Entry(
-                            row,
-                            font=("Arial", 17),
-                            bg=self.theme["entry_bg"],
-                            fg=self.theme["text"],
-                            insertbackground=self.theme["text"],
-                            relief="flat",
-                            highlightthickness=1,
-                            highlightbackground=self.theme["entry_border"],
-                            highlightcolor=self.theme["btn_top"],
-                        )
-                        ent.pack(fill=tk.X, ipady=10)
-                        self.input_entries[f] = ent
-        
-                        if f in saved_values:
-                            ent.insert(0, saved_values[f])
-        
+                for f in field_list:
+                    row = tk.Frame(parent, bg=self.theme["card_bg"])
+                    row.pack(fill=tk.X, pady=8)
+    
+                    if f == "S": label_text = "Surcharge Load: " if sheet != "Case 7" else "Width of Waler: "
+                    elif f == "PA": label_text = "Active Pressure: "
+                    elif f == "PP": label_text = "Passive Pressure: "
+                    elif f == "L": label_text = "Depth of Cut: " if sheet == "Case 1" else "Depth to Waler: "
+                    elif f == "D": label_text = "Excavation Depth: " if sheet in ["Case 2", "Case 3"] else "Depth of Cut"
+                    elif f == "DW": label_text = "Depth of Water"
+                    elif f == "R": label_text = "Radius (feet): "
+                    elif f == "W": label_text = "Uniform Distance Load KIPS/LF: "
+                    elif f == "E": label_text = "Eccentricity: "
+                    elif f == "H": label_text = "Height of Waler (inches): "
+                    elif f == "FC": label_text = "Concrete Compressive Strength: "
+                    elif f == "FY": label_text = "Steel Yield Stress: "
+                    elif f == "T": label_text = "Rise of Arch: "
+                    elif f == "C": label_text = "Chord Length: "
+                    elif f == "rebarList": label_text = "Rebar List (Qty, Size e.g. 2,8): "
+                    else: label_text = f + ":"
+    
+                    label = tk.Label(row, text=label_text, font=("Arial", 15, "bold"),
+                                         bg=self.theme["card_bg"], fg=self.theme["text"], anchor="w")
+                    label.pack(anchor="w", pady=(0, 4))
+                    self.labels.append((label, "text"))
+    
+                    ent = tk.Entry(row, font=("Arial", 17), bg=self.theme["entry_bg"], fg=self.theme["text"],
+                                       insertbackground=self.theme["text"], relief="flat", highlightthickness=1,
+                                       highlightbackground=self.theme["entry_border"], highlightcolor=self.theme["btn_top"])
+                    ent.pack(fill=tk.X, ipady=10) 
+                    self.input_entries[f] = ent
+                    if f in saved_values: ent.insert(0, saved_values[f])
+    
             build_column(left_col, left_fields)
             build_column(right_col, right_fields)
-            
-            footer = tk.Frame(card, bg=self.theme["card_bg"])
-            footer.pack(fill=tk.X, padx=40, pady=(10, 20))
-            
-            back_command = self.render_sheet if sheet != "Case 7" else self.render_waler
-            
-            back_btn = GradientButton(
-                footer,
-                text="← Back",
-                command=lambda: [self.save_current_inputs(), back_command()],
-                theme_getter=lambda: self.theme,
-                width=200,
-                height=50,
-                radius=25,
-                font=("Arial", 13, "bold"),
-            )
-            back_btn.pack(side=tk.LEFT)
-            self.grad_buttons.append(back_btn)
-            
-            calc_btn = GradientButton(
-                footer,
-                text="Calculate →",
-                command=self.execute_calc,
-                theme_getter=lambda: self.theme,
-                width=230,
-                height=50,
-                radius=25,
-                font=("Arial", 13, "bold"),
-            )
-            calc_btn.pack(side=tk.RIGHT)
-            self.grad_buttons.append(calc_btn)
-            
-            self.apply_theme()
+    
+        footer = tk.Frame(card, bg=self.theme["card_bg"])
+        footer.pack(fill=tk.X, padx=40, pady=(10, 20))
+    
+        def on_exit(cmd):
+            canvas.unbind_all("<MouseWheel>")
+            self.save_current_inputs()
+            cmd()
+    
+        back_btn = GradientButton(footer, text="← Back", command=lambda: on_exit(self.render_sheet if sheet != "Case 7" else self.render_waler),
+                                      theme_getter=lambda: self.theme, width=200, height=50, radius=25, font=("Arial", 13, "bold"))
+        back_btn.pack(side=tk.LEFT)
+        self.grad_buttons.append(back_btn)
+    
+        calc_btn = GradientButton(footer, text="Calculate →", command=lambda: on_exit(self.execute_calc),
+                                      theme_getter=lambda: self.theme, width=230, height=50, radius=25, font=("Arial", 13, "bold"))
+        calc_btn.pack(side=tk.RIGHT)
+        self.grad_buttons.append(calc_btn)
+        self.apply_theme()
     
     def _safe_float(self, value, default=0.0):
         try:
@@ -1185,69 +1144,77 @@ class CofferdamApp:
         self.clear_screen()
         self.current.set("results")
         self.set_nav_title("Results")
-
+    
         self.last_result = {"sheet": sheet, "waler": waler, "kwargs": kwargs, "res": res}
         self.last_result_text = self.format_result_text(sheet, waler, kwargs, res)
-
+    
         card = self.make_card()
-
+    
         header_text = f"Results for {sheet}" if not waler else f"Results for {sheet} - {waler}"
-        title = tk.Label(
-            card,
-            text=header_text,
-            font=("Arial", 28, "bold"),
-            bg=self.theme["card_bg"],
-            fg=self.theme["text"],
-        )
+        title = tk.Label(card, text=header_text, font=("Arial", 28, "bold"),
+                             bg=self.theme["card_bg"], fg=self.theme["text"])
         title.pack(pady=(20, 10))
         self.labels.append((title, "text"))
-
+    
         content_area = tk.Frame(card, bg=self.theme["card_bg"])
         content_area.pack(fill=tk.BOTH, expand=True, padx=28, pady=10)
-
+    
         left_frame = tk.Frame(content_area, bg=self.theme["card_bg"])
         right_frame = tk.Frame(content_area, bg=self.theme["card_bg"])
         left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 14))
         right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(14, 0))
-
-        results_box = tk.Frame(left_frame, bg=self.theme["card_bg"])
-        results_box.pack(fill=tk.BOTH, expand=True)
+    
+        res_canvas = tk.Canvas(left_frame, bg=self.theme["card_bg"], highlightthickness=0, bd=0)
+        res_scrollbar = tk.Scrollbar(left_frame, orient="vertical", command=res_canvas.yview)
+        results_box = tk.Frame(res_canvas, bg=self.theme["card_bg"])
+    
+        res_canvas.configure(yscrollcommand=res_scrollbar.set)
+        res_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        res_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+    
+        res_window = res_canvas.create_window((0, 0), window=results_box, anchor="nw")
+    
+        res_canvas.bind('<Configure>', lambda e: res_canvas.itemconfig(res_window, width=e.width))
+    
+        results_box.bind("<Configure>", lambda e: res_canvas.configure(scrollregion=res_canvas.bbox("all")))
+        res_canvas.bind_all("<MouseWheel>", lambda e: res_canvas.yview_scroll(res_window, width=e.width - 30))
+    
         display_order = ["ML", "SP", "X", "Y", "Z", "M", "MS", "W", "PR", "VA", "VC", "CS", "WM", "PM", "P1", "P2", "P3", "P4", "PT"]
         labels = {
                 "SP": "Point of Zero Shear      ",
-                "X":  "Distance X               ",
-                "Y":  "Distance Y               ",
-                "M":  "Max Moment               ",
-                "MS": "Maximum Moment           ",
-                "W":  "Top Waler Load           ",
-                "PR": "Toe Pressure             ",
-                "ML": "Min Length of Sheet Pile ",
-                "VA": "Max Shear VA             ",
-                "VC": "Max Shear VC             ",
-                "Z":  "Dimension Z              ",
-                "CS": "Combined Stress Ratio    ",
-                "WM": "W-MAX                    ",
-                "PM": "P-MAX                    ",
-                "P1": "P1                       ",
-                "P2": "P2                       ",
-                "P3": "P3                       ",
-                "P4": "P4                       ",
-                "PT": "PT                       ",
-                "P":  "Resultant Load P",
-                "AS": "Area of Steel Reinforcement",
-                "TA": "Transformed Area of Steel",
-                "IS": "Moment of Inertia (Steel)",
-                "IC": "Moment of Inertia (Concrete)",
-                "IT": "Total Moment of Inertia",
-                "EC": "Eccentricity Check",
-                "WM": "Max Allowable Uniform Load",
-                "PM": "Max Allowable Axial Load",
-                "T":  "Pressure at Dredge Line",
-                "L":  "Resultant Horizontal Load",
-                "H":  "Height to Resultant Load",                
-        }        
+                    "X":  "Distance X                ",
+                    "Y":  "Distance Y                ",
+                    "M":  "Max Moment                ",
+                    "MS": "Maximum Moment            ",
+                    "W":  "Top Waler Load            ",
+                    "PR": "Toe Pressure              ",
+                    "ML": "Min Length of Sheet Pile ",
+                    "VA": "Max Shear VA              ",
+                    "VC": "Max Shear VC              ",
+                    "Z":  "Dimension Z               ",
+                    "CS": "Combined Stress Ratio     ",
+                    "WM": "W-MAX                     ",
+                    "PM": "P-MAX                     ",
+                    "P1": "P1                        ",
+                    "P2": "P2                        ",
+                    "P3": "P3                        ",
+                    "P4": "P4                        ",
+                    "PT": "PT                        ",
+                    "P":  "Resultant Load P",
+                    "AS": "Area of Steel Reinforcement",
+                    "TA": "Transformed Area of Steel",
+                    "IS": "Moment of Inertia (Steel)",
+                    "IC": "Moment of Inertia (Concrete)",
+                    "IT": "Total Moment of Inertia",
+                    "EC": "Eccentricity Check",
+                    "WM": "Max Allowable Uniform Load",
+                    "PM": "Max Allowable Axial Load",
+                    "T":  "Pressure at Dredge Line",
+                    "L":  "Resultant Horizontal Load",
+                    "H":  "Height to Resultant Load",                
+            }        
         all_result_keys = list(res.keys())
-        
+    
         for key in display_order:
             if key in res:
                 self._render_result_row(results_box, key, res[key], labels)
