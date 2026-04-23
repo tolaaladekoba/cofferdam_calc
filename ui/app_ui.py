@@ -44,32 +44,78 @@ alongside the visualization information, accomponied with a back button.
 04/18/2026
 Author: Rylan Weldon
 Removed the next button and made the next page render among selection of cofferdam/waler case
+"""
+"""
+Project: CofferdamCalc
+File: app_ui.py
+Authors: Adetola Aladekoba and Rylan Weldon
+Date Last Modified: 3/1/2026
+
+Description:
+This portion of the program is created to provide a UI to the user and allow them to select
+sheet pile analysis cases and walter configurations through a graphic interface with theme support.
+
+Changes Made: 
+02/22/2026
+Author: Rylan Weldon
+
+Refactored the application from the function based structure into a class based and object oriented design
+by implementing the CofferdamApp class. The CofferdamApp class allowed all of the application states (theme and
+user selections) into different instance variables instead of attaching different custom attributes to the root.
+Also the data structures for both the sheet pile and waler case data from lists of tuples into dictionaries to improve effeciency
+in lookups and to improve readability. Also created a render method to reduce redundent logic in the rendering process
+and used @property to access the current theme. 
+
+02/27/2026
+Author: Adetola Aladekoba
+
+Updated main.py to align with the new class-based UI architecture after the transition from a function-based run_app structure to 
+the CofferdamApp class. Resolved an ImportError caused by main.py attempting to import a removed run_app function. 
+Modified the entry point to correctly instantiate and launch the CofferdamApp class. Verified successful execution from the terminal
+using python3 main.py. Additionally reviewed the project folder structure to maintain modular separation between UI, calculations, and core application files.
+
+03/01/2026
+Author: Rylan Weldon
+Added clarrifying comments to several portions of the code
+
+04/03/2026
+Author: Rylan Weldon
+Added the seventh case to the UI. Made it so that the waler screen would only show when case seven was selected. Imported the cofferedam library
+and added input screens for all seven cases. Added calculations for all of the cases. Reformed the sized of the window and card to match inputs.
+
+04/10/2026
+Author: Rylan Weldon
+Added visualizations for case 1, 2, 3, 5,  7(subcases I, II, III). The visualizations vary by case. Also reformated the outputs screen to showcase the outputs
+alongside the visualization information, accomponied with a back button. 
+
+04/18/2026
+Author: Rylan Weldon
+Removed the next button and made the next page render among selection of cofferdam/waler case
 
 04/19/2026
 Author: Rylan Weldon
 Created a print option for the displayed graphic as well
-
-04/20/2026
-Author: Rylan Weldon
-Created descriptive labels instead of acronyms 
-
-04/22/2026
-Author: Rylan Weldon
-Fixed resolution issues and added scrollbar for inputs and outputs
 """
 import os
-import sys
 import math
 import tempfile
 import platform
 import subprocess
 import tkinter as tk
 from tkinter import messagebox, filedialog
+
 from matplotlib.backends.backend_pdf import PdfPages
-import CofferdamLibrary
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, Circle
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+import CofferdamLibrary
+
+try:
+    from PIL import Image, ImageTk, ImageDraw
+    PIL_AVAILABLE = True
+except Exception:
+    PIL_AVAILABLE = False
 
 
 SHEET_PILE_CASES = {
@@ -90,51 +136,63 @@ WALER_CASES = {
 
 THEMES = {
     "light": {
-        "page_bg": "#EEF2F7",
+        "page_bg": "#E9EEF5",
         "card_bg": "#FFFFFF",
-        "card_border": "#D7DEE8",
-        "nav_bg": "#173F8A",
-        "nav_text": "#FFFFFF",
-        "text": "#1F2937",
-        "muted": "#4B5563",
+        "card_alt_bg": "#F6F8FB",
+        "card_border": "#CDD6E2",
+        "nav_bg": "#0F1722",
+        "nav_inner": "#13202D",
+        "nav_text": "#F5F8FC",
+        "nav_muted": "#B9C7D9",
+        "hero_panel": "#1A2735",
+        "hero_panel_border": "#314556",
+        "text": "#1B2430",
+        "muted": "#5E6B7A",
         "entry_bg": "#F5F7FA",
         "entry_border": "#C7D0DC",
-        "btn_top": "#2C49F2",
-        "btn_bottom": "#1E3FAE",
-        "btn_top_sel": "#355CFF",
-        "btn_bottom_sel": "#2449CC",
+        "btn_top": "#2F67B2",
+        "btn_top_sel": "#3E7AD1",
         "btn_text": "#FFFFFF",
+        "secondary_btn": "#DCE7F3",
+        "secondary_btn_hover": "#CCDCEE",
+        "secondary_btn_text": "#173F8A",
         "disabled_bg": "#D6D6D6",
         "disabled_text": "#6B7280",
     },
     "dark": {
-        "page_bg": "#0B1220",
-        "card_bg": "#101827",
-        "card_border": "#24324A",
-        "nav_bg": "#09162D",
-        "nav_text": "#EAF0FF",
-        "text": "#EAF0FF",
-        "muted": "#A7B3CC",
+        "page_bg": "#0E1520",
+        "card_bg": "#121C28",
+        "card_alt_bg": "#182433",
+        "card_border": "#29384A",
+        "nav_bg": "#0A1119",
+        "nav_inner": "#111B27",
+        "nav_text": "#F3F7FD",
+        "nav_muted": "#AAB7C9",
+        "hero_panel": "#101A26",
+        "hero_panel_border": "#2A394A",
+        "text": "#EAF2FF",
+        "muted": "#A6B4C6",
         "entry_bg": "#0F172A",
         "entry_border": "#334155",
-        "btn_top": "#2C49F2",
-        "btn_bottom": "#1E3FAE",
-        "btn_top_sel": "#3B82F6",
-        "btn_bottom_sel": "#2449CC",
+        "btn_top": "#3B82F6",
+        "btn_top_sel": "#60A5FA",
         "btn_text": "#FFFFFF",
+        "secondary_btn": "#24374D",
+        "secondary_btn_hover": "#304763",
+        "secondary_btn_text": "#EDF4FF",
         "disabled_bg": "#24324A",
         "disabled_text": "#8FA1C2",
     },
 }
 
 
-def rounded_rect(c: tk.Canvas, x1, y1, x2, y2, r, fill, outline):
-    c.create_rectangle(x1 + r, y1, x2 - r, y2, fill=fill, outline=fill, width=0)
-    c.create_rectangle(x1, y1 + r, x2, y2 - r, fill=fill, outline=fill, width=0)
-    c.create_arc(x1, y1, x1 + 2 * r, y1 + 2 * r, start=90, extent=90, fill=fill, outline=fill, width=0)
-    c.create_arc(x2 - 2 * r, y1, x2, y1 + 2 * r, start=0, extent=90, fill=fill, outline=fill, width=0)
-    c.create_arc(x1, y2 - 2 * r, x1 + 2 * r, y2, start=180, extent=90, fill=fill, outline=fill, width=0)
-    c.create_arc(x2 - 2 * r, y2 - 2 * r, x2, y2, start=270, extent=90, fill=fill, outline=fill, width=0)
+def rounded_rect(canvas: tk.Canvas, x1, y1, x2, y2, r, fill, outline):
+    canvas.create_rectangle(x1 + r, y1, x2 - r, y2, fill=fill, outline=fill, width=0)
+    canvas.create_rectangle(x1, y1 + r, x2, y2 - r, fill=fill, outline=fill, width=0)
+    canvas.create_arc(x1, y1, x1 + 2 * r, y1 + 2 * r, start=90, extent=90, fill=fill, outline=fill, width=0)
+    canvas.create_arc(x2 - 2 * r, y1, x2, y1 + 2 * r, start=0, extent=90, fill=fill, outline=fill, width=0)
+    canvas.create_arc(x1, y2 - 2 * r, x1 + 2 * r, y2, start=180, extent=90, fill=fill, outline=fill, width=0)
+    canvas.create_arc(x2 - 2 * r, y2 - 2 * r, x2, y2, start=270, extent=90, fill=fill, outline=fill, width=0)
 
 
 def blend_colors(a: str, b: str, t: float) -> str:
@@ -163,7 +221,6 @@ class GradientButton(tk.Frame):
         disabled=False,
     ):
         super().__init__(parent, bd=0, highlightthickness=0)
-
         self._command = command
         self._text = text
         self._width = width
@@ -184,7 +241,6 @@ class GradientButton(tk.Frame):
             cursor="hand2",
         )
         self.canvas.pack(fill="both", expand=True)
-
         self._bind_events()
         self.redraw()
 
@@ -200,16 +256,16 @@ class GradientButton(tk.Frame):
         else:
             self.canvas.configure(cursor="")
 
-    def set_selected(self, value: bool):
-        self._selected = value
-        self.redraw()
-
     def redraw(self):
+        if not self.winfo_exists():
+            return
+
         self.canvas.delete("all")
         th = self._theme_getter()
 
-        self.canvas.configure(bg=self.master.cget("bg") if "bg" in self.master.keys() else th["card_bg"])
-        self.configure(bg=self.master.cget("bg") if "bg" in self.master.keys() else th["card_bg"])
+        parent_bg = self.master.cget("bg") if "bg" in self.master.keys() else th["card_bg"]
+        self.canvas.configure(bg=parent_bg)
+        self.configure(bg=parent_bg)
 
         if self._disabled:
             fill_color = th["disabled_bg"]
@@ -217,7 +273,7 @@ class GradientButton(tk.Frame):
         else:
             fill_color = th["btn_top_sel"] if self._selected else th["btn_top"]
             if self._hover and not self._selected:
-                fill_color = blend_colors(fill_color, "#FFFFFF", 0.07)
+                fill_color = blend_colors(fill_color, "#FFFFFF", 0.08)
             text_color = th["btn_text"]
 
         rounded_rect(self.canvas, 0, 0, self._width, self._height, self._radius, fill=fill_color, outline="")
@@ -238,6 +294,63 @@ class GradientButton(tk.Frame):
         self.redraw()
 
 
+class SecondaryButton(tk.Label):
+    def __init__(self, parent, text, command, theme_getter, font=("Arial", 12, "bold"), padx=18, pady=11):
+        super().__init__(
+            parent,
+            text=text,
+            cursor="hand2",
+            bd=0,
+            padx=padx,
+            pady=pady,
+            font=font,
+        )
+        self.command = command
+        self.theme_getter = theme_getter
+        self.bind("<Button-1>", lambda e: self.command())
+        self.bind("<Enter>", lambda e: self.apply_style(True))
+        self.bind("<Leave>", lambda e: self.apply_style(False))
+        self.apply_style(False)
+
+    def apply_style(self, hover=False):
+        if not self.winfo_exists():
+            return
+        th = self.theme_getter()
+        self.configure(
+            bg=th["secondary_btn_hover"] if hover else th["secondary_btn"],
+            fg=th["secondary_btn_text"],
+            relief="flat",
+        )
+
+
+class NavTextButton(tk.Label):
+    def __init__(self, parent, text, command, theme_getter):
+        super().__init__(
+            parent,
+            text=text,
+            cursor="hand2",
+            bd=0,
+            padx=14,
+            pady=10,
+            font=("Arial", 11, "bold"),
+        )
+        self.command = command
+        self.theme_getter = theme_getter
+        self.bind("<Button-1>", lambda e: self.command())
+        self.bind("<Enter>", lambda e: self.apply_style(True))
+        self.bind("<Leave>", lambda e: self.apply_style(False))
+        self.apply_style(False)
+
+    def apply_style(self, hover=False):
+        if not self.winfo_exists():
+            return
+        th = self.theme_getter()
+        self.configure(
+            bg=self.master.cget("bg"),
+            fg="#FFFFFF" if hover else th["nav_muted"],
+        )
+
+
 class CofferdamApp:
     def __init__(self):
         self.root = tk.Tk()
@@ -248,85 +361,101 @@ class CofferdamApp:
         self.theme_name = tk.StringVar(value="light")
         self.selected_sheet = tk.StringVar(value="")
         self.selected_waler = tk.StringVar(value="")
-        self.current = tk.StringVar(value="sheet")
+        self.current = tk.StringVar(value="home")
 
         self.active_card = None
         self.labels = []
         self.desc_labels = []
         self.grad_buttons = []
+        self.secondary_buttons = []
         self.input_entries = {}
+
+        self.navbar = None
+        self.nav_shell = None
+        self.logo_label = None
+        self.home_btn = None
+        self.analysis_btn = None
+        self.theme_btn = None
+
+        self.home_overlay = None
+        self.hero_canvas = None
+        self.hero_photo = None
 
         self.input_memory = {}
         self.last_result = None
         self.last_result_text = ""
         self.current_figure = None
+        self.image_path = self._resolve_image_path()
 
         self.build_layout()
-        self.render_sheet()
+        self.render_homepage()
+
+        self.root.bind("<Configure>", self._on_root_resize)
         self.root.mainloop()
 
     @property
     def theme(self):
         return THEMES[self.theme_name.get()]
 
+    def _resolve_image_path(self):
+        possible_paths = [
+            "cofferdam.PNG",
+            "cofferdam.png",
+            "/mnt/data/IMG_8691.PNG",
+            "IMG_8691.PNG",
+            os.path.join(os.getcwd(), "cofferdam.PNG"),
+            os.path.join(os.getcwd(), "cofferdam.png"),
+        ]
+        for path in possible_paths:
+            if os.path.exists(path):
+                return path
+        return None
+
+    def _on_root_resize(self, event):
+        if event.widget == self.root and self.current.get() == "home":
+            self.root.after(60, self.render_home_hero)
+
     def build_layout(self):
         self.root.configure(bg=self.theme["page_bg"])
 
-        self.navbar = tk.Frame(self.root, height=62, bg=self.theme["nav_bg"])
+        self.navbar = tk.Frame(self.root, height=78, bg=self.theme["nav_bg"])
         self.navbar.pack(fill=tk.X, side=tk.TOP)
         self.navbar.pack_propagate(False)
 
-        self.nav_left = tk.Frame(self.navbar, bg=self.theme["nav_bg"])
-        self.nav_left.pack(side=tk.LEFT, padx=18)
+        self.nav_shell = tk.Frame(self.navbar, bg=self.theme["nav_inner"])
+        self.nav_shell.pack(fill=tk.BOTH, expand=True, padx=22, pady=12)
 
-        self.nav_center = tk.Frame(self.navbar, bg=self.theme["nav_bg"])
-        self.nav_center.pack(side=tk.LEFT, expand=True)
+        left = tk.Frame(self.nav_shell, bg=self.theme["nav_inner"])
+        left.pack(side=tk.LEFT)
 
-        self.nav_right = tk.Frame(self.navbar, bg=self.theme["nav_bg"])
-        self.nav_right.pack(side=tk.RIGHT, padx=18)
+        center = tk.Frame(self.nav_shell, bg=self.theme["nav_inner"])
+        center.pack(side=tk.LEFT, expand=True)
 
-        self.home_btn = tk.Button(
-            self.nav_left,
-            text="Home",
-            command=self.go_home,
-            font=("Arial", 12, "bold"),
-            bg="#FFFFFF",
-            fg="#173F8A",
-            relief="flat",
-            padx=16,
-            pady=7,
-            cursor="hand2",
-        )
-        self.home_btn.pack(side=tk.LEFT, pady=10)
+        right = tk.Frame(self.nav_shell, bg=self.theme["nav_inner"])
+        right.pack(side=tk.RIGHT)
 
-        self.page_title = tk.Label(
-            self.nav_center,
+        self.logo_label = tk.Label(
+            center,
             text="CofferdamCalc",
-            font=("Arial", 20, "bold"),
-            bg=self.theme["nav_bg"],
+            font=("Arial", 18, "bold"),
+            bg=self.theme["nav_inner"],
             fg=self.theme["nav_text"],
         )
-        self.page_title.pack(pady=12)
+        self.logo_label.pack(pady=8)
 
-        self.theme_btn = tk.Button(
-            self.nav_right,
-            text="Toggle Theme",
-            command=self.toggle_theme,
-            font=("Arial", 11, "bold"),
-            bg="#FFFFFF",
-            fg="#173F8A",
-            relief="flat",
-            padx=14,
-            pady=7,
-            cursor="hand2",
-        )
-        self.theme_btn.pack(side=tk.RIGHT, pady=10)
+        self.home_btn = NavTextButton(left, "Home", self.go_home, lambda: self.theme)
+        self.home_btn.pack(side=tk.LEFT, padx=(2, 10))
+
+        self.analysis_btn = NavTextButton(left, "Analysis", self.render_sheet, lambda: self.theme)
+        self.analysis_btn.pack(side=tk.LEFT)
+
+        self.theme_btn = NavTextButton(right, "Theme", self.toggle_theme, lambda: self.theme)
+        self.theme_btn.pack(side=tk.RIGHT)
+
+        self.secondary_buttons.extend([self.home_btn, self.analysis_btn, self.theme_btn])
 
         self.screen = tk.Frame(self.root, bg=self.theme["page_bg"])
         self.screen.pack(fill=tk.BOTH, expand=True)
-
-    def set_nav_title(self, text):
-        self.page_title.config(text=text)
 
     def toggle_theme(self):
         self.theme_name.set("dark" if self.theme_name.get() == "light" else "light")
@@ -335,12 +464,20 @@ class CofferdamApp:
     def clear_screen(self):
         for w in self.screen.winfo_children():
             w.destroy()
+
         self.active_card = None
         self.labels.clear()
         self.desc_labels.clear()
         self.grad_buttons.clear()
-        self.input_entries.clear()
+        self.secondary_buttons = [
+            btn for btn in [self.home_btn, self.analysis_btn, self.theme_btn]
+            if btn is not None and btn.winfo_exists()
+        ]
+        self.input_entries = {}
         self.current_figure = None
+        self.home_overlay = None
+        self.hero_canvas = None
+        self.hero_photo = None
 
     def make_card(self):
         card = tk.Frame(
@@ -356,38 +493,73 @@ class CofferdamApp:
     def apply_theme(self):
         self.root.configure(bg=self.theme["page_bg"])
         self.screen.configure(bg=self.theme["page_bg"])
-        self.navbar.configure(bg=self.theme["nav_bg"])
-        self.nav_left.configure(bg=self.theme["nav_bg"])
-        self.nav_center.configure(bg=self.theme["nav_bg"])
-        self.nav_right.configure(bg=self.theme["nav_bg"])
-        self.page_title.configure(bg=self.theme["nav_bg"], fg=self.theme["nav_text"])
 
-        if self.active_card:
+        if self.navbar and self.navbar.winfo_exists():
+            self.navbar.configure(bg=self.theme["nav_bg"])
+        if self.nav_shell and self.nav_shell.winfo_exists():
+            self.nav_shell.configure(bg=self.theme["nav_inner"])
+
+        if self.nav_shell and self.nav_shell.winfo_exists():
+            for child in self.nav_shell.winfo_children():
+                if child.winfo_exists():
+                    child.configure(bg=self.theme["nav_inner"])
+
+        if self.logo_label and self.logo_label.winfo_exists():
+            self.logo_label.configure(bg=self.theme["nav_inner"], fg=self.theme["nav_text"])
+
+        if self.active_card and self.active_card.winfo_exists():
             self.active_card.configure(
                 bg=self.theme["card_bg"],
                 highlightbackground=self.theme["card_border"],
             )
 
-        for label_widget, kind in self.labels:
-            label_widget.configure(
-                bg=label_widget.master.cget("bg"),
-                fg=self.theme["text"] if kind == "text" else self.theme["muted"],
+        if self.home_overlay and self.home_overlay.winfo_exists():
+            self.home_overlay.configure(
+                bg=self.theme["hero_panel"],
+                highlightbackground=self.theme["hero_panel_border"],
             )
+
+        for label_widget, kind in self.labels:
+            if not label_widget.winfo_exists():
+                continue
+            if self.home_overlay and label_widget.winfo_toplevel() == self.root and self.current.get() == "home":
+                if label_widget.master == self.home_overlay or label_widget.master.winfo_exists() and label_widget.master.cget("bg") == self.theme["hero_panel"]:
+                    fg = "#FFFFFF"
+                else:
+                    fg = self.theme["text"] if kind == "text" else self.theme["muted"]
+            else:
+                fg = self.theme["text"] if kind == "text" else self.theme["muted"]
+
+            bg = label_widget.master.cget("bg") if "bg" in label_widget.master.keys() else self.theme["card_bg"]
+            label_widget.configure(bg=bg, fg=fg)
 
         for label_widget in self.desc_labels:
-            label_widget.configure(bg=label_widget.master.cget("bg"), fg=self.theme["muted"])
+            if label_widget.winfo_exists():
+                label_widget.configure(bg=label_widget.master.cget("bg"), fg=self.theme["muted"])
 
         for ent in self.input_entries.values():
-            ent.configure(
-                bg=self.theme["entry_bg"],
-                fg=self.theme["text"],
-                insertbackground=self.theme["text"],
-                highlightbackground=self.theme["entry_border"],
-                highlightcolor=self.theme["btn_top"],
-            )
+            if ent.winfo_exists():
+                ent.configure(
+                    bg=self.theme["entry_bg"],
+                    fg=self.theme["text"],
+                    insertbackground=self.theme["text"],
+                    highlightbackground=self.theme["entry_border"],
+                    highlightcolor=self.theme["btn_top"],
+                )
 
         for gb in self.grad_buttons:
-            gb.redraw()
+            if gb.winfo_exists():
+                gb.redraw()
+
+        valid_buttons = []
+        for sb in self.secondary_buttons:
+            if sb and sb.winfo_exists():
+                sb.apply_style(False)
+                valid_buttons.append(sb)
+        self.secondary_buttons = valid_buttons
+
+        if self.current.get() == "home":
+            self.render_home_hero()
 
     def current_input_key(self):
         return (self.selected_sheet.get(), self.selected_waler.get())
@@ -396,25 +568,31 @@ class CofferdamApp:
         if not self.input_entries:
             return
         key = self.current_input_key()
-        self.input_memory[key] = {field: entry.get().strip() for field, entry in self.input_entries.items()}
+        self.input_memory[key] = {
+            field: entry.get().strip()
+            for field, entry in self.input_entries.items()
+            if entry.winfo_exists()
+        }
 
     def restore_inputs_for_current_case(self):
         return self.input_memory.get(self.current_input_key(), {})
 
     def go_home(self):
         self.save_current_inputs()
-        self.selected_sheet.set("")
-        self.selected_waler.set("")
-        self.render_sheet()
+        self.current.set("home")
+        self.render_homepage()
 
     def render(self):
-        if self.current.get() == "sheet":
+        current_view = self.current.get()
+        if current_view == "home":
+            self.render_homepage()
+        elif current_view == "sheet":
             self.render_sheet()
-        elif self.current.get() == "waler":
+        elif current_view == "waler":
             self.render_waler()
-        elif self.current.get() == "inputs":
+        elif current_view == "inputs":
             self.render_inputs()
-        elif self.current.get() == "results" and self.last_result:
+        elif current_view == "results" and self.last_result:
             self.render_results(
                 self.last_result["sheet"],
                 self.last_result["waler"],
@@ -422,12 +600,197 @@ class CofferdamApp:
                 self.last_result["res"],
             )
         else:
-            self.render_sheet()
+            self.render_homepage()
+
+    def render_homepage(self):
+        self.clear_screen()
+        self.current.set("home")
+
+        hero_frame = tk.Frame(self.screen, bg=self.theme["page_bg"])
+        hero_frame.pack(fill=tk.BOTH, expand=True)
+
+        self.hero_canvas = tk.Canvas(
+            hero_frame,
+            bd=0,
+            highlightthickness=0,
+            bg=self.theme["page_bg"],
+        )
+        self.hero_canvas.pack(fill=tk.BOTH, expand=True)
+
+        self.home_overlay = tk.Frame(
+            hero_frame,
+            bg=self.theme["hero_panel"],
+            highlightthickness=1,
+            highlightbackground=self.theme["hero_panel_border"],
+        )
+        self.home_overlay.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.42, relheight=0.34)
+
+        title = tk.Label(
+            self.home_overlay,
+            text="Sheet Pile Analysis",
+            font=("Arial", 30, "bold"),
+            bg=self.theme["hero_panel"],
+            fg="#FFFFFF",
+        )
+        title.pack(pady=(26, 14))
+        self.labels.append((title, "text"))
+
+        subtitle = tk.Label(
+            self.home_overlay,
+            text="Cofferdam Load Calculator and Visualization Tool",
+            font=("Arial", 15),
+            bg=self.theme["hero_panel"],
+            fg="#E5EDF7",
+        )
+        subtitle.pack()
+        self.labels.append((subtitle, "text"))
+
+        button_row = tk.Frame(self.home_overlay, bg=self.theme["hero_panel"])
+        button_row.pack(pady=(32, 0))
+
+        analysis_btn = GradientButton(
+            button_row,
+            text="Analysis",
+            command=self.render_sheet,
+            theme_getter=lambda: self.theme,
+            width=200,
+            height=52,
+            radius=16,
+            font=("Arial", 13, "bold"),
+        )
+        analysis_btn.pack(side=tk.LEFT, padx=10)
+        self.grad_buttons.append(analysis_btn)
+
+        credits_btn = GradientButton(
+            button_row,
+            text="Credits",
+            command=self.show_credits,
+            theme_getter=lambda: self.theme,
+            width=200,
+            height=52,
+            radius=16,
+            font=("Arial", 13, "bold"),
+        )
+        credits_btn.pack(side=tk.LEFT, padx=10)
+        self.grad_buttons.append(credits_btn)
+
+        footer_frame = tk.Frame(self.home_overlay, bg=self.theme["hero_panel"])
+        footer_frame.pack(side=tk.BOTTOM, pady=18)
+
+        team_label = tk.Label(
+            footer_frame,
+            text="Adetola Aladekoba   •   Cristhian Gomez   •   Rylan Weldon",
+            font=("Arial", 10, "bold"),
+            bg=self.theme["hero_panel"],
+            fg="#F2F7FD",
+        )
+        team_label.pack()
+        self.labels.append((team_label, "text"))
+
+        school_label = tk.Label(
+            footer_frame,
+            text="Senior Design Project – McNeese State University",
+            font=("Arial", 9),
+            bg=self.theme["hero_panel"],
+            fg="#D8E3F0",
+        )
+        school_label.pack(pady=(4, 0))
+        self.labels.append((school_label, "text"))
+
+        self.apply_theme()
+        self.root.after(50, self.render_home_hero)
+
+    def render_home_hero(self):
+        if not self.hero_canvas or not self.hero_canvas.winfo_exists():
+            return
+
+        self.root.update_idletasks()
+
+        width = self.hero_canvas.winfo_width()
+        height = self.hero_canvas.winfo_height()
+
+        if width <= 1 or height <= 1:
+            self.root.after(50, self.render_home_hero)
+            return
+
+        self.hero_canvas.delete("all")
+        self.hero_canvas.configure(width=width, height=height)
+
+        if PIL_AVAILABLE and self.image_path and os.path.exists(self.image_path):
+            try:
+                from PIL import ImageOps, ImageChops
+
+                image = Image.open(self.image_path).convert("RGB")
+
+                bg = Image.new("RGB", image.size, image.getpixel((0, 0)))
+                diff = ImageChops.difference(image, bg)
+                bbox = diff.getbbox()
+                if bbox:
+                    image = image.crop(bbox)
+
+                # extra side trim if needed
+                trim_x = max(10, int(image.width * 0.02))
+                trim_y = max(4, int(image.height * 0.005))
+
+                if image.width > 2 * trim_x and image.height > 2 * trim_y:
+                    image = image.crop((trim_x, trim_y, image.width - trim_x, image.height - trim_y))
+
+                image = ImageOps.fit(
+                    image,
+                    (width, height),
+                    method=Image.LANCZOS,
+                    centering=(0.5, 0.5)
+                )
+
+                overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+                overlay_alpha = 45 if self.theme_name.get() == "light" else 75
+                overlay_color = (12, 22, 35, overlay_alpha)
+
+                draw = ImageDraw.Draw(overlay)
+                draw.rectangle((0, 0, width, height), fill=overlay_color)
+
+                final_img = Image.alpha_composite(image.convert("RGBA"), overlay)
+                self.hero_photo = ImageTk.PhotoImage(final_img)
+
+                self.hero_canvas.create_image(0, 0, image=self.hero_photo, anchor="nw")
+            except Exception:
+                self._draw_simple_fallback(width, height)
+        else:
+            self._draw_simple_fallback(width, height)
+
+    def _draw_simple_fallback(self, width, height):
+        if not self.hero_canvas or not self.hero_canvas.winfo_exists():
+            return
+
+        self.hero_canvas.create_rectangle(
+            0, 0, width, height,
+            fill="#294766" if self.theme_name.get() == "light" else "#162433",
+            outline=""
+        )
+
+        line_color = "#DCE6F2"
+        self.hero_canvas.create_line(220, height * 0.72, 220, height * 0.28, width=4, fill=line_color)
+        self.hero_canvas.create_line(220, height * 0.72, 620, height * 0.72, width=4, fill=line_color)
+        self.hero_canvas.create_line(300, height * 0.72, 300, height * 0.38, width=4, fill=line_color)
+        self.hero_canvas.create_line(390, height * 0.72, 390, height * 0.48, width=4, fill=line_color)
+        self.hero_canvas.create_line(480, height * 0.72, 480, height * 0.42, width=4, fill=line_color)
+        self.hero_canvas.create_line(480, height * 0.50, 610, height * 0.72, width=4, fill=line_color)
+
+    def show_credits(self):
+        messagebox.showinfo(
+            "Credits",
+            "CofferdamCalc: Sheet Pile Analysis Tool\n\n"
+            "Team Members:\n"
+            "- Adetola Aladekoba\n"
+            "- Cristhian Gomez\n"
+            "- Rylan Weldon\n\n"
+            "Senior Design Project\n"
+            "McNeese State University",
+        )
 
     def render_sheet(self):
         self.clear_screen()
         self.current.set("sheet")
-        self.set_nav_title("CofferdamCalc")
 
         card = self.make_card()
 
@@ -471,7 +834,6 @@ class CofferdamApp:
                 height=60,
                 radius=28,
                 font=("Arial", 15, "bold"),
-                selected=(self.selected_sheet.get() == case_name),
             )
             gb.pack(pady=(0, 8))
             self.grad_buttons.append(gb)
@@ -514,7 +876,6 @@ class CofferdamApp:
     def render_waler(self):
         self.clear_screen()
         self.current.set("waler")
-        self.set_nav_title("Select Waler Case")
 
         card = self.make_card()
 
@@ -554,7 +915,6 @@ class CofferdamApp:
                 height=62,
                 radius=28,
                 font=("Arial", 15, "bold"),
-                selected=(self.selected_waler.get() == w_name),
             )
             gb.pack(pady=(0, 8))
             self.grad_buttons.append(gb)
@@ -620,109 +980,120 @@ class CofferdamApp:
     def render_inputs(self):
         self.clear_screen()
         self.current.set("inputs")
-        self.set_nav_title("Input Parameters")
-    
         card = self.make_card()
         sheet = self.selected_sheet.get()
         waler = self.selected_waler.get()
         saved_values = self.restore_inputs_for_current_case()
-    
+
         header_text = f"Inputs for {sheet}" if not waler else f"Inputs for {sheet} - {waler}"
-        title = tk.Label(card, text=header_text, font=("Arial", 28, "bold"),
-                             bg=self.theme["card_bg"], fg=self.theme["text"])
+        title = tk.Label(
+            card,
+            text=header_text,
+            font=("Arial", 28, "bold"),
+            bg=self.theme["card_bg"],
+            fg=self.theme["text"]
+        )
         title.pack(pady=(24, 10))
         self.labels.append((title, "text"))
-    
+
         fields = self.get_fields_for_current_case()
-    
+
         form_outer = tk.Frame(card, bg=self.theme["card_bg"])
         form_outer.pack(fill=tk.BOTH, expand=True, padx=20, pady=(5, 5))
-    
-        canvas = tk.Canvas(form_outer, bg=self.theme["card_bg"], highlightthickness=0, bd=0)
-        scrollbar = tk.Scrollbar(form_outer, orient="vertical", command=canvas.yview)
-        form_area = tk.Frame(canvas, bg=self.theme["card_bg"])
-    
-        canvas.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-    
-        canvas_window = canvas.create_window((0, 0), window=form_area, anchor="nw")
-    
-        canvas.bind('<Configure>', lambda e: canvas.itemconfig(canvas_window, width=e.width))
-    
-        form_area.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
-    
+
+        form_area = tk.Frame(form_outer, bg=self.theme["card_bg"])
+        form_area.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.95, relheight=0.85)
+
         if not fields:
-            label = tk.Label(form_area, text="Inputs are not defined for this case.",
-                                 font=("Arial", 16), bg=self.theme["card_bg"], fg=self.theme["muted"])
+            label = tk.Label(
+                form_area,
+                text="Inputs are not defined for this case.",
+                font=("Arial", 16),
+                bg=self.theme["card_bg"],
+                fg=self.theme["muted"]
+            )
             label.pack(pady=40)
             self.labels.append((label, "muted"))
         else:
             mid = math.ceil(len(fields) / 2)
-            left_fields = fields[:mid]; right_fields = fields[mid:]
-    
+            left_fields = fields[:mid]
+            right_fields = fields[mid:]
+
             left_col = tk.Frame(form_area, bg=self.theme["card_bg"])
             right_col = tk.Frame(form_area, bg=self.theme["card_bg"])
-            left_col.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=30)
-            right_col.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=30)
-    
+            left_col.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=16)
+            right_col.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=16)
+
             def build_column(parent, field_list):
                 for f in field_list:
                     row = tk.Frame(parent, bg=self.theme["card_bg"])
                     row.pack(fill=tk.X, pady=8)
-    
-                    if f == "S": label_text = "Surcharge Load: " if sheet != "Case 7" else "Width of Waler: "
-                    elif f == "PA": label_text = "Active Pressure: "
-                    elif f == "PP": label_text = "Passive Pressure: "
-                    elif f == "L": label_text = "Depth of Cut: " if sheet == "Case 1" else "Depth to Waler: "
-                    elif f == "D": label_text = "Excavation Depth: " if sheet in ["Case 2", "Case 3"] else "Depth of Cut"
-                    elif f == "DW": label_text = "Depth of Water"
-                    elif f == "R": label_text = "Radius (feet): "
-                    elif f == "W": label_text = "Uniform Distance Load KIPS/LF: "
-                    elif f == "E": label_text = "Eccentricity: "
-                    elif f == "H": label_text = "Height of Waler (inches): "
-                    elif f == "FC": label_text = "Concrete Compressive Strength: "
-                    elif f == "FY": label_text = "Steel Yield Stress: "
-                    elif f == "T": label_text = "Rise of Arch: "
-                    elif f == "C": label_text = "Chord Length: "
-                    elif f == "rebarList": label_text = "Rebar List (Qty, Size e.g. 2,8): "
-                    else: label_text = f + ":"
-    
-                    label = tk.Label(row, text=label_text, font=("Arial", 15, "bold"),
-                                         bg=self.theme["card_bg"], fg=self.theme["text"], anchor="w")
+
+                    label_text = f + (" (Qty, Size e.g. 2,8)" if f == "rebarList" else "") + ":"
+                    label = tk.Label(
+                        row,
+                        text=label_text,
+                        font=("Arial", 17, "bold"),
+                        bg=self.theme["card_bg"],
+                        fg=self.theme["text"],
+                        anchor="w",
+                    )
                     label.pack(anchor="w", pady=(0, 4))
                     self.labels.append((label, "text"))
-    
-                    ent = tk.Entry(row, font=("Arial", 17), bg=self.theme["entry_bg"], fg=self.theme["text"],
-                                       insertbackground=self.theme["text"], relief="flat", highlightthickness=1,
-                                       highlightbackground=self.theme["entry_border"], highlightcolor=self.theme["btn_top"])
-                    ent.pack(fill=tk.X, ipady=10) 
+
+                    ent = tk.Entry(
+                        row,
+                        font=("Arial", 17),
+                        bg=self.theme["entry_bg"],
+                        fg=self.theme["text"],
+                        insertbackground=self.theme["text"],
+                        relief="flat",
+                        highlightthickness=1,
+                        highlightbackground=self.theme["entry_border"],
+                        highlightcolor=self.theme["btn_top"],
+                    )
+                    ent.pack(fill=tk.X, ipady=10)
                     self.input_entries[f] = ent
-                    if f in saved_values: ent.insert(0, saved_values[f])
-    
+
+                    if f in saved_values:
+                        ent.insert(0, saved_values[f])
+
             build_column(left_col, left_fields)
             build_column(right_col, right_fields)
-    
+
         footer = tk.Frame(card, bg=self.theme["card_bg"])
         footer.pack(fill=tk.X, padx=40, pady=(10, 20))
-    
-        def on_exit(cmd):
-            canvas.unbind_all("<MouseWheel>")
-            self.save_current_inputs()
-            cmd()
-    
-        back_btn = GradientButton(footer, text="← Back", command=lambda: on_exit(self.render_sheet if sheet != "Case 7" else self.render_waler),
-                                      theme_getter=lambda: self.theme, width=200, height=50, radius=25, font=("Arial", 13, "bold"))
+
+        back_command = self.render_sheet if sheet != "Case 7" else self.render_waler
+
+        back_btn = GradientButton(
+            footer,
+            text="← Back",
+            command=lambda: [self.save_current_inputs(), back_command()],
+            theme_getter=lambda: self.theme,
+            width=200,
+            height=50,
+            radius=25,
+            font=("Arial", 13, "bold"),
+        )
         back_btn.pack(side=tk.LEFT)
         self.grad_buttons.append(back_btn)
-    
-        calc_btn = GradientButton(footer, text="Calculate →", command=lambda: on_exit(self.execute_calc),
-                                      theme_getter=lambda: self.theme, width=230, height=50, radius=25, font=("Arial", 13, "bold"))
+
+        calc_btn = GradientButton(
+            footer,
+            text="Calculate →",
+            command=self.execute_calc,
+            theme_getter=lambda: self.theme,
+            width=230,
+            height=50,
+            radius=25,
+            font=("Arial", 13, "bold"),
+        )
         calc_btn.pack(side=tk.RIGHT)
         self.grad_buttons.append(calc_btn)
+
         self.apply_theme()
-    
+
     def _safe_float(self, value, default=0.0):
         try:
             return float(value)
@@ -998,47 +1369,6 @@ class CofferdamApp:
         ax.set_title(f"Combined Stress Ratio: {res.get('CS', 0):.3f}", fontsize=13, fontweight="bold")
 
     def format_result_text(self, sheet, waler, kwargs, res):
-        input_labels = {
-            "S":  "Surcharge:        ", 
-            "PA": "Active Pressure:  ", 
-            "PP": "Passive Pressure: ",
-            "L": "Depth of Wale:     ", 
-            "D": "Excavation Depth:  ", 
-            "DW": "Water Depth:      "
-        }
-        result_labels = {
-                "SP": "Point of Zero Shear      ",
-                "X":  "Distance X               ",
-                "Y":  "Distance Y               ",
-                "M":  "Max Moment               ",
-                "MS": "Maximum Moment           ",
-                "W":  "Top Waler Load           ",
-                "PR": "Toe Pressure             ",
-                "ML": "Min Length of Sheet Pile ",
-                "VA": "Max Shear VA             ",
-                "VC": "Max Shear VC             ",
-                "Z":  "Dimension Z              ",
-                "CS": "Combined Stress Ratio    ",
-                "WM": "W-MAX                    ",
-                "PM": "P-MAX                    ",
-                "P1": "P1                       ",
-                "P2": "P2                       ",
-                "P3": "P3                       ",
-                "P4": "P4                       ",
-                "PT": "PT                       ",
-                "P":  "Resultant Load P",
-                "AS": "Area of Steel Reinforcement",
-                "TA": "Transformed Area of Steel",
-                "IS": "Moment of Inertia (Steel)",
-                "IC": "Moment of Inertia (Concrete)",
-                "IT": "Total Moment of Inertia",
-                "EC": "Eccentricity Check",
-                "WM": "Max Allowable Uniform Load",
-                "PM": "Max Allowable Axial Load",
-                "T":  "Pressure at Dredge Line",
-                "L":  "Resultant Horizontal Load",
-                "H":  "Height to Resultant Load",                
-        }        
         lines = []
         header = f"Results for {sheet}" if not waler else f"Results for {sheet} - {waler}"
         lines.append(header)
@@ -1046,20 +1376,16 @@ class CofferdamApp:
         lines.append("")
         lines.append("Inputs:")
         for k, v in kwargs.items():
-            display_in = input_labels.get(k, k)
-            lines.append(f"  {display_in:<30}: {v}")
-        
+            lines.append(f"  {k}: {v}")
         lines.append("")
         lines.append("Results:")
         for k, v in res.items():
             if k in ["Moments", "YValues"]:
                 continue
-    
-            #find full word first
-            display_key = result_labels.get(k, k)
-            val = f"{v:.4f}" if isinstance(v, float) else str(v)
-            lines.append(f"  {display_key:<30}: {val}")
-    
+            if isinstance(v, float):
+                lines.append(f"  {k}: {round(v, 4)}")
+            else:
+                lines.append(f"  {k}: {v}")
         return "\n".join(lines)
 
     def save_results(self):
@@ -1091,12 +1417,14 @@ class CofferdamApp:
         try:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf:
                 temp_path = temp_pdf.name
-            
+
             with PdfPages(temp_path) as pdf:
                 fig_text = plt.figure(figsize=(8.5, 11))
-                fig_text.text(0.1, 0.95, self.last_result_text, 
-                             fontsize=10, fontfamily='monospace', 
-                             ha='left', va='top', wrap=True)
+                fig_text.text(
+                    0.1, 0.95, self.last_result_text,
+                    fontsize=10, fontfamily="monospace",
+                    ha="left", va="top", wrap=True
+                )
                 pdf.savefig(fig_text)
                 plt.close(fig_text)
 
@@ -1106,17 +1434,15 @@ class CofferdamApp:
             system_name = platform.system()
             if system_name == "Windows":
                 try:
-                    #will attempt anautomatic print
                     os.startfile(temp_path, "print")
                     messagebox.showinfo("Success", "Sent to printer.")
-                except OSError as e:
-                    #fallback to opening os
+                except OSError:
                     os.startfile(temp_path)
-                    messagebox.showinfo("Manual Print", "Automatic printing not supported.\nThe report has been opened. Please print it manually")
-            else: #other os
+                    messagebox.showinfo("Manual Print", "Automatic printing not supported.\nThe report has been opened. Please print it manually.")
+            else:
                 subprocess.run(["lpr", temp_path], check=False)
                 messagebox.showinfo("Success", "Sent to printer.")
-                
+
         except Exception as e:
             messagebox.showerror("Print Error", f"An unexpected error occurred:\n\n{e}")
 
@@ -1143,86 +1469,66 @@ class CofferdamApp:
     def render_results(self, sheet, waler, kwargs, res):
         self.clear_screen()
         self.current.set("results")
-        self.set_nav_title("Results")
-    
+
         self.last_result = {"sheet": sheet, "waler": waler, "kwargs": kwargs, "res": res}
         self.last_result_text = self.format_result_text(sheet, waler, kwargs, res)
-    
+
         card = self.make_card()
-    
+
         header_text = f"Results for {sheet}" if not waler else f"Results for {sheet} - {waler}"
-        title = tk.Label(card, text=header_text, font=("Arial", 28, "bold"),
-                             bg=self.theme["card_bg"], fg=self.theme["text"])
+        title = tk.Label(
+            card,
+            text=header_text,
+            font=("Arial", 28, "bold"),
+            bg=self.theme["card_bg"],
+            fg=self.theme["text"],
+        )
         title.pack(pady=(20, 10))
         self.labels.append((title, "text"))
-    
+
         content_area = tk.Frame(card, bg=self.theme["card_bg"])
         content_area.pack(fill=tk.BOTH, expand=True, padx=28, pady=10)
-    
+
         left_frame = tk.Frame(content_area, bg=self.theme["card_bg"])
         right_frame = tk.Frame(content_area, bg=self.theme["card_bg"])
         left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 14))
         right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(14, 0))
-    
-        res_canvas = tk.Canvas(left_frame, bg=self.theme["card_bg"], highlightthickness=0, bd=0)
-        res_scrollbar = tk.Scrollbar(left_frame, orient="vertical", command=res_canvas.yview)
-        results_box = tk.Frame(res_canvas, bg=self.theme["card_bg"])
-    
-        res_canvas.configure(yscrollcommand=res_scrollbar.set)
-        res_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        res_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-    
-        res_window = res_canvas.create_window((0, 0), window=results_box, anchor="nw")
-    
-        res_canvas.bind('<Configure>', lambda e: res_canvas.itemconfig(res_window, width=e.width))
-    
-        results_box.bind("<Configure>", lambda e: res_canvas.configure(scrollregion=res_canvas.bbox("all")))
-        res_canvas.bind_all("<MouseWheel>", lambda e: res_canvas.yview_scroll(res_window, width=e.width - 30))
-    
-        display_order = ["ML", "SP", "X", "Y", "Z", "M", "MS", "W", "PR", "VA", "VC", "CS", "WM", "PM", "P1", "P2", "P3", "P4", "PT"]
-        labels = {
-                "SP": "Point of Zero Shear      ",
-                    "X":  "Distance X                ",
-                    "Y":  "Distance Y                ",
-                    "M":  "Max Moment                ",
-                    "MS": "Maximum Moment            ",
-                    "W":  "Top Waler Load            ",
-                    "PR": "Toe Pressure              ",
-                    "ML": "Min Length of Sheet Pile ",
-                    "VA": "Max Shear VA              ",
-                    "VC": "Max Shear VC              ",
-                    "Z":  "Dimension Z               ",
-                    "CS": "Combined Stress Ratio     ",
-                    "WM": "W-MAX                     ",
-                    "PM": "P-MAX                     ",
-                    "P1": "P1                        ",
-                    "P2": "P2                        ",
-                    "P3": "P3                        ",
-                    "P4": "P4                        ",
-                    "PT": "PT                        ",
-                    "P":  "Resultant Load P",
-                    "AS": "Area of Steel Reinforcement",
-                    "TA": "Transformed Area of Steel",
-                    "IS": "Moment of Inertia (Steel)",
-                    "IC": "Moment of Inertia (Concrete)",
-                    "IT": "Total Moment of Inertia",
-                    "EC": "Eccentricity Check",
-                    "WM": "Max Allowable Uniform Load",
-                    "PM": "Max Allowable Axial Load",
-                    "T":  "Pressure at Dredge Line",
-                    "L":  "Resultant Horizontal Load",
-                    "H":  "Height to Resultant Load",                
-            }        
-        all_result_keys = list(res.keys())
-    
-        for key in display_order:
-            if key in res:
-                self._render_result_row(results_box, key, res[key], labels)
-                all_result_keys.remove(key) 
-    
-        for key in all_result_keys:
-            if key not in ["Moments", "YValues"]:
-                self._render_result_row(results_box, key, res[key], labels)
+
+        results_box = tk.Frame(left_frame, bg=self.theme["card_bg"])
+        results_box.pack(fill=tk.BOTH, expand=True)
+
+        for k, v in res.items():
+            if k in ["Moments", "YValues"]:
+                continue
+
+            row = tk.Frame(results_box, bg=self.theme["card_bg"])
+            row.pack(fill=tk.X, pady=6, anchor="w")
+
+            key_label = tk.Label(
+                row,
+                text=f"{k}:",
+                font=("Arial", 15, "bold"),
+                bg=self.theme["card_bg"],
+                fg=self.theme["muted"],
+                width=16,
+                anchor="w"
+            )
+            key_label.pack(side=tk.LEFT)
+            self.labels.append((key_label, "muted"))
+
+            value_text = str(round(v, 4)) if isinstance(v, float) else str(v)
+            val_label = tk.Label(
+                row,
+                text=value_text,
+                font=("Arial", 15),
+                bg=self.theme["card_bg"],
+                fg=self.theme["text"],
+                anchor="w",
+                justify="left",
+                wraplength=470,
+            )
+            val_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
+            self.labels.append((val_label, "text"))
 
         fig = plt.figure(figsize=(7.2, 5.4))
         ax = fig.add_subplot(111)
@@ -1334,35 +1640,7 @@ class CofferdamApp:
         self.grad_buttons.append(print_btn)
 
         self.apply_theme()
-    def _render_result_row(self, container, key, value, label_map):
-        row = tk.Frame(container, bg=self.theme["card_bg"])
-        row.pack(fill=tk.X, pady=4, anchor="w")
-    
-        display_name = label_map.get(key, key)
-        
-        #for the output text
-        key_label = tk.Label(
-                row,
-                text=f"{display_name:<30} :",
-                font=("Courier New", 16, "bold"), 
-                bg=self.theme["card_bg"],
-                fg=self.theme["muted"],
-                anchor="w"
-            )
-        key_label.pack(side=tk.LEFT)
-        self.labels.append((key_label, "muted"))
-    
-        val_text = f"{value:.4f}" if isinstance(value, float) else str(value)
-        val_label = tk.Label(
-                row,
-                text=f" {val_text}",
-                font=("Arial", 14),
-                bg=self.theme["card_bg"],
-                fg=self.theme["text"],
-                anchor="w"
-            )
-        val_label.pack(side=tk.LEFT)
-        self.labels.append((val_label, "text"))
+
     def execute_calc(self):
         try:
             self.save_current_inputs()
