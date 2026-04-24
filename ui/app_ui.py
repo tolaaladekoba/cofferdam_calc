@@ -230,16 +230,44 @@ class CofferdamApp:
             self._resize_after_id = self.root.after(100, self.render_home_hero)
     
     def show_credits(self):
-        messagebox.showinfo(
-            "Credits",
-            "CofferdamCalc: Sheet Pile Analysis Tool\n\n"
-            "Team Members:\n"
-            "- Adetola Aladekoba\n"
-            "- Cristhian Gomez\n"
-            "- Rylan Weldon\n\n"
-            "Senior Design Project\n"
-            "McNeese State University",
-        )    
+        credits_window = tk.Toplevel(self.root)
+        credits_window.title("Credits")
+        credits_window.geometry("500x350")
+        credits_window.configure(bg=self.theme["card_bg"])
+
+        title = tk.Label(
+            credits_window,
+            text="Project Credits",
+            font=("Arial", 18, "bold"),
+            bg=self.theme["card_bg"],
+            fg=self.theme["text"]
+        )
+        title.pack(pady=15)
+
+        content = tk.Label(
+            credits_window,
+            text=(
+                "Team Members:\n"
+                "Adetola Aladekoba\n"
+                "Cristhian Gomez\n"
+                "Rylan Weldon\n\n"
+
+                "Faculty Advisors:\n"
+                "Dr. Jennifer Lavergne PHD\n"
+                "Col. Ted Thompson\n\n"
+
+                "Photo Credit:\n"
+                "American Piledriving Equipment (APE)\n\n"
+
+                "McNeese State University\n"
+                "Senior Design Project"
+            ),
+            font=("Arial", 12),
+            bg=self.theme["card_bg"],
+            fg=self.theme["text"],
+            justify="center"
+        )
+        content.pack(pady=10)
     @property
     def theme(self):
         return THEMES[self.theme_name.get()]
