@@ -60,6 +60,11 @@ Fixed resolution issues and added scrollbar for inputs and outputs
 04/23/2026
 Author: Rylan Weldon
 Merged Adetolas home page code with the current code and fixed an issue with the home apge button
+
+04/23/2026
+Author: Rylan Weldon
+Created an AutoCad export option, fixed the scaling of the left-side outputs to expand/contract given different screen sizes, added tool tips for all of the inputs
+to give information on what they are. Fixed case 3's graph by reforming it to display the moment
 """
 import os
 import sys
@@ -740,7 +745,92 @@ class CofferdamApp:
         self.grad_buttons.append(back_btn)
 
         self.apply_theme()
-
+    def export_to_autocad(self):
+        try:
+            from pyautocad import Autocad, APoint
+        except ImportError:
+            messagebox.showerror("Missing pythgon library", "Install via terminal\nIf not developer, please contact IT")
+            return
+    
+        try:
+            acad = Autocad(create_if_not_exists=True)
+            acad.prompt("Exporting Cofferdam info to AutoCad...\n")
+    
+            kwargs = self.last_result.get("kwargs", {})
+            sheet_case = self.last_result.get("sheet", "")
+            
+            #in case l is missing in other cases
+            L = float(kwargs.get("L", 0.0))  
+            D = float(kwargs.get("D", L))    
+    
+            #all depths
+            waler_depths = [L] if L > 0 else []
+            for key in ["L1", "L2", "L3", "L4", "L5", "L6"]:
+                val = float(kwargs.get(key, 0.0))
+                if val > 0 and val not in waler_depths:
+                    waler_depths.append(val)
+    
+           
+            sf = max(D / 20.0, 1.0) 
+            text_h = 0.5 * sf 
+    
+            top_y = 5.0*sf
+            bottom_y = -D - (10.0 * sf) 
+    
+            #sheet pile
+            acad.model.AddLine(APoint(0, top_y), APoint(0, bottom_y)).Color = 7
+            txt_pile = acad.model.AddText("SHEET PILE", APoint(1.0 * sf, 0), text_h)
+            txt_pile.Rotation = 1.5708 
+            txt_pile.Color = 7
+    
+            #ground surf
+            acad.model.AddLine(APoint(0, 0), APoint(15*sf, 0)).Color = 2
+            acad.model.AddText("GROUND SURF. (El. 0.0)", APoint(2 * sf, 0.8 * sf), text_h).Color = 2
+    
+            #dredge
+            excavation_y = -D
+            acad.model.AddLine(APoint(0, excavation_y), APoint(-15*sf, excavation_y)).Color = 2
+            acad.model.AddText(f"DREDGE LINE (El. -{D})", APoint(-12*sf, excavation_y - (1.2 * sf)), text_h).Color = 2
+    
+            #waler and strut
+            w_size = 0.8 * sf
+            for idx, w_depth in enumerate(waler_depths):
+                waler_y = -w_depth + (1.5 * sf) if w_depth > 1 else 0
+    
+             
+                w1, w2 = APoint(0, waler_y + w_size), APoint(-w_size*2, waler_y + w_size)
+                w3, w4 = APoint(-w_size*2, waler_y - w_size), APoint(0, waler_y - w_size)
+                acad.model.AddLine(w1, w2).Color = 1 
+                acad.model.AddLine(w2, w3).Color = 1 
+                acad.model.AddLine(w3, w4).Color = 1 
+                acad.model.AddLine(w4, w1).Color = 1 
+    
+            
+                w_txt_h = text_h * 0.5
+                acad.model.AddText(f"W{idx+1}", APoint(-w_size * 1.6, waler_y - (w_txt_h / 2)), w_txt_h).Color = 1
+    
+                #strut
+                acad.model.AddLine(APoint(-w_size*2, waler_y), APoint(-15 * sf, waler_y)).Color = 1
+                acad.model.AddText(f"BRACING / STRUT {idx+1}", APoint(-14 * sf, waler_y + 0.4 * sf), text_h * 0.85).Color = 1
+    
+            #water if there is water depth thats provided
+            if "DW" in kwargs:
+                water_elevation = -float(kwargs["DW"])
+                if water_elevation > 0: water_elevation = 0
+    
+                acad.model.AddLine(APoint(0, water_elevation), APoint(-15 * sf, water_elevation)).Color = 5
+    
+                wt_x = -2.5 * sf
+                acad.model.AddLine(APoint(wt_x, water_elevation), APoint(wt_x - 0.5*sf, water_elevation + 0.8*sf)).Color = 5
+                acad.model.AddLine(APoint(wt_x, water_elevation), APoint(wt_x + 0.5*sf, water_elevation + 0.8*sf)).Color = 5
+                acad.model.AddLine(APoint(wt_x - 0.5*sf, water_elevation + 0.8*sf), APoint(wt_x + 0.5*sf, water_elevation + 0.8*sf)).Color = 5
+                acad.model.AddText("WATER LEVEL", APoint(wt_x + (1.2 * sf), water_elevation + (0.4 * sf)), text_h * 0.85).Color = 5
+    
+            acad.app.ZoomExtents()
+            messagebox.showinfo("Export Successful", "Information successfully plotted into AutoCAD.")
+    
+        except Exception as e:
+            messagebox.showerror("AutoCAD Export Error", "Make sure AutoCAD is open and on New Sheet.\nDetails: "+e)    
     def select_waler_case(self, name):
         self.save_current_inputs()
         self.selected_waler.set(name)
@@ -784,13 +874,74 @@ class CofferdamApp:
         header_text = f"Inputs for {sheet}" if not waler else f"Inputs for {sheet} - {waler}"
         title = tk.Label(card, text=header_text, font=("Arial", 28, "bold"),
                              bg=self.theme["card_bg"], fg=self.theme["text"])
-        title.pack(pady=(24, 10))
+        title.pack(side=tk.TOP, pady=(24, 10))
         self.labels.append((title, "text"))
     
         fields = self.get_fields_for_current_case()
+
+        footer = tk.Frame(card, bg=self.theme["card_bg"])
+        footer.pack(side=tk.BOTTOM, fill=tk.X, padx=40, pady=(10, 20))
     
+        def on_exit(cmd):
+            canvas.unbind_all("<MouseWheel>")
+            self.save_current_inputs()
+            cmd()
+    
+        back_btn = GradientButton(footer, text="← Back", command=lambda: on_exit(self.render_sheet if sheet != "Case 7" else self.render_waler),
+                                      theme_getter=lambda: self.theme, width=200, height=50, radius=25, font=("Arial", 13, "bold"))
+        back_btn.pack(side=tk.LEFT)
+        self.grad_buttons.append(back_btn)
+    
+        calc_btn = GradientButton(footer, text="Calculate →", command=lambda: on_exit(self.execute_calc),
+                                      theme_getter=lambda: self.theme, width=230, height=50, radius=25, font=("Arial", 13, "bold"))
+        calc_btn.pack(side=tk.RIGHT)
+        self.grad_buttons.append(calc_btn)
+    
+
+        field_descriptions = {
+                "S": "Width of Waler: The horizontal thickness of concrete waler." if sheet == "Case 7" else "Surcharge Load: Vertical load applied to adjacent ground surface",
+                "PA": "Active Pressure: Lateral pressure from the soil pushing against the wall.",
+                "PP": "Passive Pressure: Lateral resistance from the soil below the dredge line holding the wall back.",
+                "L": "Depth of Cut / Waler: Depth to the first waler or the initial excavation cut depth.",
+                "D": "Excavation Depth: Total depth of the excavation or dredge line.",
+                "DW": "Water Depth: Depth from the surface to the groundwater table.",
+                "L1": "Waler 1 Depth: Depth from surface to 1st waler.",
+                "L2": "Waler 2 Depth: Depth from surface to 2nd waler.",
+                "L3": "Waler 3 Depth: Depth from surface to 3rd waler.",
+                "L4": "Waler 4 Depth: Depth from surface to 4th waler.",
+                "L5": "Waler 5 Depth: Depth from surface to 5th waler.",
+                "L6": "Waler 6 Depth: Depth from surface to 6th waler.",
+                "R": "Radius (ft): Radius of the circular or semi-circle cofferdam.",
+                "W": "Uniform Distance Load (KIPS/LF): Uniformly distrbuted load applied to waler.",
+                "E": "Eccentricity (in): The offset distance of the applied load.",
+                "H": "Height of Waler (in): Vertical height dimension of concrete waler.",
+                "FC": "Concrete Strength (psi): compressive strength of concrete.",
+                "FY": "Steel Yield Stress (psi): Yield strength of the steel reinforcement (fy).",
+                "T": "Rise of Arch (ft): Distance from the chord to the peak of the segmental arch.",
+                "C": "Chord Length (ft): Width of segmental arch opening.",
+                "rebarList": "Rebar List: Provide quantity and size separated by comma (e.g.\"2,8\" for two #8 bars)."
+            }
+    
+        info_frame = tk.Frame(card, bg=self.theme["card_bg"])
+        info_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=40, pady=(0, 15))
+    
+        default_info_text = "Click on an input field to see its description here."
+        info_label = tk.Label(
+                info_frame, 
+                text=default_info_text, 
+                font=("Arial", 13, "italic"),
+                bg=self.theme["entry_bg"], 
+                fg=self.theme["muted"], 
+                relief="solid", 
+                bd=1, 
+                padx=15, 
+                pady=15, 
+                wraplength=1000
+            )
+        info_label.pack(fill=tk.X)
+        self.labels.append((info_label, "muted"))
         form_outer = tk.Frame(card, bg=self.theme["card_bg"])
-        form_outer.pack(fill=tk.BOTH, expand=True, padx=20, pady=(5, 5))
+        form_outer.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=20, pady=(5, 5))
     
         canvas = tk.Canvas(form_outer, bg=self.theme["card_bg"], highlightthickness=0, bd=0)
         scrollbar = tk.Scrollbar(form_outer, orient="vertical", command=canvas.yview)
@@ -803,7 +954,6 @@ class CofferdamApp:
         canvas_window = canvas.create_window((0, 0), window=form_area, anchor="nw")
     
         canvas.bind('<Configure>', lambda e: canvas.itemconfig(canvas_window, width=e.width))
-    
         form_area.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         canvas.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
     
@@ -850,21 +1000,22 @@ class CofferdamApp:
     
                     ent = tk.Entry(row, font=("Arial", 17), bg=self.theme["entry_bg"], fg=self.theme["text"],
                                        insertbackground=self.theme["text"], relief="flat", highlightthickness=1,
-                                       highlightbackground=self.theme["entry_border"], highlightcolor=self.theme["btn_top"])
+                                           highlightbackground=self.theme["entry_border"], highlightcolor=self.theme["btn_top"])
                     ent.pack(fill=tk.X, ipady=10) 
                     self.input_entries[f] = ent
                     if f in saved_values: ent.insert(0, saved_values[f])
     
+                    ent.bind("<FocusIn>", lambda e, desc=field_descriptions.get(f, "Enter value here."): info_label.config(text=desc, fg=self.theme["text"], font=("Arial", 12)))
+                    ent.bind("<FocusOut>", lambda e: info_label.config(text=default_info_text, fg=self.theme["muted"], font=("Arial", 12, "italic")))
+    
             build_column(left_col, left_fields)
             build_column(right_col, right_fields)
     
-        footer = tk.Frame(card, bg=self.theme["card_bg"])
-        footer.pack(fill=tk.X, padx=40, pady=(10, 20))
-    
-        def on_exit(cmd):
-            canvas.unbind_all("<MouseWheel>")
-            self.save_current_inputs()
-            cmd()
+        self.apply_theme()
+    def on_exit(cmd):
+        canvas.unbind_all("<MouseWheel>")
+        self.save_current_inputs()
+        cmd()
     
         back_btn = GradientButton(footer, text="← Back", command=lambda: on_exit(self.render_sheet if sheet != "Case 7" else self.render_waler),
                                       theme_getter=lambda: self.theme, width=200, height=50, radius=25, font=("Arial", 13, "bold"))
@@ -876,7 +1027,7 @@ class CofferdamApp:
         calc_btn.pack(side=tk.RIGHT)
         self.grad_buttons.append(calc_btn)
         self.apply_theme()
-    
+
     def _safe_float(self, value, default=0.0):
         try:
             return float(value)
@@ -983,10 +1134,24 @@ class CofferdamApp:
 
     def _draw_case3_visual(self, ax, res):
         if "YValues" in res and "Moments" in res and len(res["YValues"]) > 0:
-            ax.plot(res["Moments"], res["YValues"], color="#2C3E50", linewidth=2.8)
-            ax.invert_yaxis()
+            sorted_data = sorted(zip(res["YValues"], res["Moments"]))
+            y_vals = [item[0] for item in sorted_data]
+            m_vals = [item[1] for item in sorted_data]
+    
+            ax.plot(m_vals, y_vals, color="#2C3E50", linewidth=2.8)
+            ax.fill_betweenx(y_vals, m_vals, 0, alpha=0.28, color="#5DADE2")
             ax.axvline(0, color="black", linewidth=1.3)
-            ax.fill_betweenx(res["YValues"], res["Moments"], 0, alpha=0.28, color="#5DADE2")
+    
+            max_y = max(y_vals)
+            embedment, _ = self._get_embedment_or_length_value(res)
+    
+            if embedment and embedment >max_y:
+                bottom_of_chart = embedment + 5.0
+            else:
+                bottom_of_chart = max_y + 10.0
+    
+            ax.set_ylim(bottom_of_chart, 0)
+    
             self._style_plot(ax, "Case 3: Bending Moment Diagram", "Bending Moment", "Depth")
             return True
         return False
@@ -1315,8 +1480,13 @@ class CofferdamApp:
     
         left_frame = tk.Frame(content_area, bg=self.theme["card_bg"])
         right_frame = tk.Frame(content_area, bg=self.theme["card_bg"])
-        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 14))
-        right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(14, 0))
+    
+        content_area.grid_columnconfigure(0, weight=1, uniform="pane")
+        content_area.grid_columnconfigure(1, weight=1, uniform="pane")
+        content_area.grid_rowconfigure(0, weight=1)
+    
+        left_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 14))
+        right_frame.grid(row=0, column=1, sticky="nsew", padx=(14, 0))
     
         res_canvas = tk.Canvas(left_frame, bg=self.theme["card_bg"], highlightthickness=0, bd=0)
         res_scrollbar = tk.Scrollbar(left_frame, orient="vertical", command=res_canvas.yview)
@@ -1329,43 +1499,43 @@ class CofferdamApp:
         res_window = res_canvas.create_window((0, 0), window=results_box, anchor="nw")
     
         res_canvas.bind('<Configure>', lambda e: res_canvas.itemconfig(res_window, width=e.width))
-    
         results_box.bind("<Configure>", lambda e: res_canvas.configure(scrollregion=res_canvas.bbox("all")))
-        res_canvas.bind_all("<MouseWheel>", lambda e: res_canvas.yview_scroll(res_window, width=e.width - 30))
+    
+        res_canvas.bind_all("<MouseWheel>", lambda e: res_canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
     
         display_order = ["ML", "SP", "X", "Y", "Z", "M", "MS", "W", "PR", "VA", "VC", "CS", "WM", "PM", "P1", "P2", "P3", "P4", "PT"]
         labels = {
                 "SP": "Point of Zero Shear      ",
                     "X":  "Distance X                ",
-                    "Y":  "Distance Y                ",
-                    "M":  "Max Moment                ",
-                    "MS": "Maximum Moment            ",
-                    "W":  "Top Waler Load            ",
-                    "PR": "Toe Pressure              ",
-                    "ML": "Min Length of Sheet Pile ",
-                    "VA": "Max Shear VA              ",
-                    "VC": "Max Shear VC              ",
-                    "Z":  "Dimension Z               ",
-                    "CS": "Combined Stress Ratio     ",
-                    "WM": "W-MAX                     ",
-                    "PM": "P-MAX                     ",
-                    "P1": "P1                        ",
-                    "P2": "P2                        ",
-                    "P3": "P3                        ",
-                    "P4": "P4                        ",
-                    "PT": "PT                        ",
-                    "P":  "Resultant Load P",
-                    "AS": "Area of Steel Reinforcement",
-                    "TA": "Transformed Area of Steel",
-                    "IS": "Moment of Inertia (Steel)",
-                    "IC": "Moment of Inertia (Concrete)",
-                    "IT": "Total Moment of Inertia",
-                    "EC": "Eccentricity Check",
-                    "WM": "Max Allowable Uniform Load",
-                    "PM": "Max Allowable Axial Load",
-                    "T":  "Pressure at Dredge Line",
-                    "L":  "Resultant Horizontal Load",
-                    "H":  "Height to Resultant Load",                
+                        "Y":  "Distance Y                ",
+                        "M":  "Max Moment                ",
+                        "MS": "Maximum Moment            ",
+                        "W":  "Top Waler Load            ",
+                        "PR": "Toe Pressure              ",
+                        "ML": "Min Length of Sheet Pile ",
+                        "VA": "Max Shear VA              ",
+                        "VC": "Max Shear VC              ",
+                        "Z":  "Dimension Z               ",
+                        "CS": "Combined Stress Ratio     ",
+                        "WM": "W-MAX                     ",
+                        "PM": "P-MAX                     ",
+                        "P1": "P1                        ",
+                        "P2": "P2                        ",
+                        "P3": "P3                        ",
+                        "P4": "P4                        ",
+                        "PT": "PT                        ",
+                        "P":  "Resultant Load P",
+                        "AS": "Area of Steel Reinforcement",
+                        "TA": "Transformed Area of Steel",
+                        "IS": "Moment of Inertia (Steel)",
+                        "IC": "Moment of Inertia (Concrete)",
+                        "IT": "Total Moment of Inertia",
+                        "EC": "Eccentricity Check",
+                        "WM": "Max Allowable Uniform Load",
+                        "PM": "Max Allowable Axial Load",
+                        "T":  "Pressure at Dredge Line",
+                        "L":  "Resultant Horizontal Load",
+                        "H":  "Height to Resultant Load",                
             }        
         all_result_keys = list(res.keys())
     
@@ -1377,11 +1547,11 @@ class CofferdamApp:
         for key in all_result_keys:
             if key not in ["Moments", "YValues"]:
                 self._render_result_row(results_box, key, res[key], labels)
-
+    
         fig = plt.figure(figsize=(7.2, 5.4))
         ax = fig.add_subplot(111)
         has_plot = False
-
+    
         if sheet == "Case 1":
             bars = ["P1 (Surcharge)", "P2 (Active)", "P3 (Cross)", "P4 (Passive)"]
             vals = [res.get("P1", 0), res.get("P2", 0), res.get("P3", 0), -res.get("P4", 0)]
@@ -1406,7 +1576,7 @@ class CofferdamApp:
         elif sheet == "Case 7":
             self._draw_case7_visual(ax, kwargs, res)
             has_plot = True
-
+    
         if has_plot:
             fig.tight_layout(pad=1.2)
             self.current_figure = fig
@@ -1416,77 +1586,90 @@ class CofferdamApp:
         else:
             plt.close(fig)
             no_plot = tk.Label(
-                right_frame,
-                text="No visualization available for this calculation.",
-                font=("Arial", 14, "italic"),
-                bg=self.theme["card_bg"],
-                fg=self.theme["muted"]
-            )
+                    right_frame,
+                    text="No visualization available for this calculation.",
+                    font=("Arial", 14, "italic"),
+                    bg=self.theme["card_bg"],
+                    fg=self.theme["muted"]
+                )
             no_plot.pack(expand=True)
             self.labels.append((no_plot, "muted"))
             self.current_figure = None
-
+    
         footer = tk.Frame(card, bg=self.theme["card_bg"])
         footer.pack(fill=tk.X, padx=28, pady=(8, 18))
-
+    
         left_actions = tk.Frame(footer, bg=self.theme["card_bg"])
         left_actions.pack(side=tk.LEFT)
-
+    
         right_actions = tk.Frame(footer, bg=self.theme["card_bg"])
         right_actions.pack(side=tk.RIGHT)
-
+    
         back_btn = GradientButton(
-            left_actions,
-            text="← Back to Inputs",
-            command=lambda: [self.save_current_inputs(), self.render_inputs()],
-            theme_getter=lambda: self.theme,
-            width=220,
-            height=50,
-            radius=25,
-            font=("Arial", 13, "bold"),
-        )
+                left_actions,
+                text="← Back to Inputs",
+                command=lambda: [self.save_current_inputs(), self.render_inputs()],
+                theme_getter=lambda: self.theme,
+                width=220,
+                height=50,
+                radius=25,
+                font=("Arial", 13, "bold"),
+            )
         back_btn.pack(side=tk.LEFT, padx=(0, 10))
         self.grad_buttons.append(back_btn)
-
+    
         save_btn = GradientButton(
-            right_actions,
-            text="Save Results",
-            command=self.save_results,
-            theme_getter=lambda: self.theme,
-            width=180,
-            height=50,
-            radius=25,
-            font=("Arial", 12, "bold"),
-        )
+                right_actions,
+                text="Save Results",
+                command=self.save_results,
+                theme_getter=lambda: self.theme,
+                width=180,
+                height=50,
+                radius=25,
+                font=("Arial", 12, "bold"),
+            )
         save_btn.pack(side=tk.LEFT, padx=6)
         self.grad_buttons.append(save_btn)
-
+    
         save_plot_btn = GradientButton(
-            right_actions,
-            text="Save Plot",
-            command=self.save_plot_png,
-            theme_getter=lambda: self.theme,
-            width=160,
-            height=50,
-            radius=25,
-            font=("Arial", 12, "bold"),
-        )
+                right_actions,
+                text="Save Plot",
+                command=self.save_plot_png,
+                theme_getter=lambda: self.theme,
+                width=160,
+                height=50,
+                radius=25,
+                font=("Arial", 12, "bold"),
+            )
         save_plot_btn.pack(side=tk.LEFT, padx=6)
         self.grad_buttons.append(save_plot_btn)
-
+    
+        cad_btn = GradientButton(
+                right_actions,
+                    text="Export to AutoCAD",
+                    command=self.export_to_autocad,
+                    theme_getter=lambda: self.theme,
+                    width=180,
+                    height=50,
+                    radius=25,
+                    font=("Arial", 12, "bold"),
+            )
+        cad_btn.pack(side=tk.LEFT, padx=6)
+        self.grad_buttons.append(cad_btn)        
+    
         print_btn = GradientButton(
-            right_actions,
-            text="Print Results",
-            command=self.print_results,
-            theme_getter=lambda: self.theme,
-            width=180,
-            height=50,
-            radius=25,
-            font=("Arial", 12, "bold"),
-        )
+                right_actions,
+                text="Print Results",
+                command=self.print_results,
+                theme_getter=lambda: self.theme,
+                width=180,
+                height=50,
+                radius=25,
+                font=("Arial", 12, "bold"),
+            )
         print_btn.pack(side=tk.LEFT, padx=6)
         self.grad_buttons.append(print_btn)
-
+    
         self.apply_theme()
     def _render_result_row(self, container, key, value, label_map):
         row = tk.Frame(container, bg=self.theme["card_bg"])
