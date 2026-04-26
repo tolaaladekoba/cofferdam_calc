@@ -65,6 +65,10 @@ Merged Adetolas home page code with the current code and fixed an issue with the
 Author: Rylan Weldon
 Created an AutoCad export option, fixed the scaling of the left-side outputs to expand/contract given different screen sizes, added tool tips for all of the inputs
 to give information on what they are. Fixed case 3's graph by reforming it to display the moment
+
+04/26/2026
+Author: Rylan Weldon
+Added splash screen, increased tool tip box size and font, and added more accronym definitions.
 """
 import os
 import sys
@@ -207,23 +211,66 @@ class CofferdamApp:
         self.selected_sheet = tk.StringVar(value="")
         self.selected_waler = tk.StringVar(value="")
         self.current = tk.StringVar(value="home")
-
         self.active_card = None
         self.labels = []
         self.desc_labels = []
         self.grad_buttons = []
         self.input_entries = {}
-
         self.input_memory = {}
         self.last_result = None
         self.image_path = "cofferdam.png"
+        self.opening_image_path = "Cofferdamcalc_Opening.jpg" 
         self.last_result_text = ""
         self.current_figure = None
 
         self.build_layout()
         self.render_homepage()
+        
+        self.show_splash()
+
         self.root.bind("<Configure>", self._on_root_resize)
         self.root.mainloop()
+
+    def show_splash(self):
+        self.splash_frame = tk.Frame(self.root, bg="black")
+        self.splash_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+    
+        self.splash_image_label = tk.Label(self.splash_frame, bg="black")
+        self.splash_image_label.pack(fill=tk.BOTH, expand=True)
+    
+        if PIL_AVAILABLE and os.path.exists(self.opening_image_path):
+            try:
+                img = Image.open(self.opening_image_path)
+    
+
+                img.thumbnail((1200, 900), Image.LANCZOS)
+    
+                self.splash_img_tk = ImageTk.PhotoImage(img)
+                self.splash_image_label.config(image=self.splash_img_tk)
+            except Exception as e:
+                self.splash_image_label.config(text="CofferdamCalc Loading...", fg="white", font=("Arial", 24))
+        else:
+            self.splash_image_label.config(text="CofferdamCalc Loading...", fg="white", font=("Arial", 24))
+    
+        self.timer_label = tk.Label(
+                self.splash_frame, 
+                text="20", 
+                font=("Arial", 28, "bold"), 
+                fg="#FFFFFF", 
+                bg="#FF3B30", 
+                padx=15, 
+                pady=5
+            )
+        self.timer_label.place(relx=0.98, rely=0.02, anchor="ne")
+    
+        self.update_splash_timer(20)
+
+    def update_splash_timer(self, seconds):
+        if seconds > 0:
+            self.timer_label.config(text=str(seconds))
+            self.root.after(1000, lambda: self.update_splash_timer(seconds - 1))
+        else:
+            self.splash_frame.destroy()
     def _on_root_resize(self, event):
         if event.widget == self.root and self.current.get() == "home":
             if hasattr(self, '_resize_after_id'): self.root.after_cancel(self._resize_after_id)
@@ -957,13 +1004,13 @@ class CofferdamApp:
         info_label = tk.Label(
                 info_frame, 
                 text=default_info_text, 
-                font=("Arial", 13, "italic"),
+                font=("Arial", 20, "italic"),
                 bg=self.theme["entry_bg"], 
                 fg=self.theme["muted"], 
                 relief="solid", 
                 bd=1, 
                 padx=15, 
-                pady=15, 
+                pady=20, 
                 wraplength=1000
             )
         info_label.pack(fill=tk.X)
@@ -1033,8 +1080,8 @@ class CofferdamApp:
                     self.input_entries[f] = ent
                     if f in saved_values: ent.insert(0, saved_values[f])
     
-                    ent.bind("<FocusIn>", lambda e, desc=field_descriptions.get(f, "Enter value here."): info_label.config(text=desc, fg=self.theme["text"], font=("Arial", 12)))
-                    ent.bind("<FocusOut>", lambda e: info_label.config(text=default_info_text, fg=self.theme["muted"], font=("Arial", 12, "italic")))
+                    ent.bind("<FocusIn>", lambda e, desc=field_descriptions.get(f, "Enter value here."): info_label.config(text=desc, fg=self.theme["text"], font=("Arial", 20)))
+                    ent.bind("<FocusOut>", lambda e: info_label.config(text=default_info_text, fg=self.theme["muted"], font=("Arial", 20, "italic")))
     
             build_column(left_col, left_fields)
             build_column(right_col, right_fields)
@@ -1355,24 +1402,37 @@ class CofferdamApp:
         }
         result_labels = {
                 "SP": "Point of Zero Shear      ",
-                "X":  "Distance X               ",
-                "Y":  "Distance Y               ",
-                "M":  "Max Moment               ",
-                "MS": "Maximum Moment           ",
-                "W":  "Top Waler Load           ",
-                "PR": "Toe Pressure             ",
+                "X":  "Distance X                ",
+                "Y":  "Distance Y                ",
+                "M":  "Max Moment                ",
+                "MS": "Maximum Moment            ",
+                "W":  "Top Waler Load            ",
+                "PR": "Toe Pressure              ",
                 "ML": "Min Length of Sheet Pile ",
-                "VA": "Max Shear VA             ",
-                "VC": "Max Shear VC             ",
-                "Z":  "Dimension Z              ",
-                "CS": "Combined Stress Ratio    ",
-                "WM": "W-MAX                    ",
-                "PM": "P-MAX                    ",
-                "P1": "P1                       ",
-                "P2": "P2                       ",
-                "P3": "P3                       ",
-                "P4": "P4                       ",
-                "PT": "PT                       ",
+                "VA": "Max Shear VA              ",
+                "VC": "Max Shear VC              ",
+                "Z":  "Dimension Z               ",
+                "CS": "Combined Stress Ratio     ",
+                "WM": "W-MAX                     ",
+                "PM": "P-MAX                     ",
+                "P1": "P1                        ",
+                "P2": "P2                        ",
+                "P3": "P3                        ",
+                "P4": "P4                        ",
+                "PT": "Total Pressure (PT)       ",
+                "R":  "Resultant Force (R)       ",
+                "WH": "High Water Force (WH)     ",
+                "WL": "Low Water Force (WL)      ",
+                "F":  "Factor of Safety (F)      ",
+                "PP": "Passive Pressure (PP)     ",
+                "PW": "Total Water Load (PW)     ",
+                "SR": "Surcharge Resultant (SR)  ",
+                "WR": "Waler Resultant (WR)      ",
+                "WT": "Total Horizontal Force (WT)",
+                "TP": "Total Passive Force (TP)  ",
+                "XH": "Center of Pressure High (XH)",
+                "XL": "Center of Pressure Low (XL) ",
+                "AD": "Active Pressure Depth (AD) ",
                 "P":  "Resultant Load P",
                 "AS": "Area of Steel Reinforcement",
                 "TA": "Transformed Area of Steel",
@@ -1380,8 +1440,6 @@ class CofferdamApp:
                 "IC": "Moment of Inertia (Concrete)",
                 "IT": "Total Moment of Inertia",
                 "EC": "Eccentricity Check",
-                "WM": "Max Allowable Uniform Load",
-                "PM": "Max Allowable Axial Load",
                 "T":  "Pressure at Dredge Line",
                 "L":  "Resultant Horizontal Load",
                 "H":  "Height to Resultant Load",                
@@ -1533,38 +1591,47 @@ class CofferdamApp:
     
         display_order = ["ML", "SP", "X", "Y", "Z", "M", "MS", "W", "PR", "VA", "VC", "CS", "WM", "PM", "P1", "P2", "P3", "P4", "PT"]
         labels = {
-                "SP": "Point of Zero Shear      ",
-                    "X":  "Distance X                ",
-                        "Y":  "Distance Y                ",
-                        "M":  "Max Moment                ",
-                        "MS": "Maximum Moment            ",
-                        "W":  "Top Waler Load            ",
-                        "PR": "Toe Pressure              ",
-                        "ML": "Min Length of Sheet Pile ",
-                        "VA": "Max Shear VA              ",
-                        "VC": "Max Shear VC              ",
-                        "Z":  "Dimension Z               ",
-                        "CS": "Combined Stress Ratio     ",
-                        "WM": "W-MAX                     ",
-                        "PM": "P-MAX                     ",
-                        "P1": "P1                        ",
-                        "P2": "P2                        ",
-                        "P3": "P3                        ",
-                        "P4": "P4                        ",
-                        "PT": "PT                        ",
-                        "P":  "Resultant Load P",
-                        "AS": "Area of Steel Reinforcement",
-                        "TA": "Transformed Area of Steel",
-                        "IS": "Moment of Inertia (Steel)",
-                        "IC": "Moment of Inertia (Concrete)",
-                        "IT": "Total Moment of Inertia",
-                        "EC": "Eccentricity Check",
-                        "WM": "Max Allowable Uniform Load",
-                        "PM": "Max Allowable Axial Load",
-                        "T":  "Pressure at Dredge Line",
-                        "L":  "Resultant Horizontal Load",
-                        "H":  "Height to Resultant Load",                
-            }        
+            "SP": "Point of Zero Shear      ",
+            "X":  "Distance X                ",
+            "Y":  "Distance Y                ",
+            "M":  "Max Moment                ",
+            "MS": "Maximum Moment            ",
+            "W":  "Top Waler Load            ",
+            "PR": "Toe Pressure              ",
+            "ML": "Min Length of Sheet Pile ",
+            "VA": "Max Shear VA              ",
+            "VC": "Max Shear VC              ",
+            "Z":  "Dimension Z               ",
+            "CS": "Combined Stress Ratio     ",
+            "WM": "W-MAX                     ",
+            "PM": "P-MAX                     ",
+            "P1": "Surcharge Force (P1)      ",
+            "P2": "Active Soil Force (P2)    ",
+            "P3": "Net Passive Force (P3)    ",
+            "P4": "Additional Force (P4)     ",
+            "PT": "Total Pressure (PT)       ", 
+            "R":  "Resultant Force (R)       ", 
+            "WH": "High Water Force (WH)     ", 
+            "WL": "Low Water Force (WL)      ", 
+            "F":  "Factor of Safety (F)      ", 
+            "PP": "Passive Pressure (PP)     ",
+            "PW": "Total Water Load (PW)     ",
+            "P0": "Initial Resultant (P0)    ", 
+            "P5": "Toe Resistance Force (P5) ", 
+            "SR": "Surcharge Resultant (SR)  ", 
+            "WR": "Waler Resultant (WR)      ",
+            "WT": "Total Horizontal Force (WT)",
+            "TP": "Total Passive Force (TP)  ",
+            "XH": "Center of Pressure High (XH)",
+            "XL": "Center of Pressure Low (XL) ",
+            "AD": "Active Pressure Depth (AD) ",
+            "AS": "Area of Steel Reinforcement",
+            "TA": "Transformed Area of Steel",
+            "IS": "Moment of Inertia (Steel)",
+            "IC": "Moment of Inertia (Concrete)",
+            "IT": "Total Moment of Inertia",
+            "EC": "Eccentricity Check",
+        }        
         all_result_keys = list(res.keys())
     
         for key in display_order:
