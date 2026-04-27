@@ -69,6 +69,11 @@ to give information on what they are. Fixed case 3's graph by reforming it to di
 04/26/2026
 Author: Rylan Weldon
 Added splash screen, increased tool tip box size and font, and added more accronym definitions.
+
+04/27/2026
+Author: Rylan Weldon
+Added phi and gamma inputs on both ui and cofferdam library. Added a button to calculate pa and pp automatically
+with the inputs or the user could enter it custom. Also edited the restults to include it
 """
 import os
 import sys
@@ -230,7 +235,28 @@ class CofferdamApp:
 
         self.root.bind("<Configure>", self._on_root_resize)
         self.root.mainloop()
-
+        
+    def calculate_earth_pressures(self):
+        try:
+            phi = float(self.input_entries["PHI"].get())
+            gamma = float(self.input_entries["GAMMA"].get())
+    
+            phi_rad = math.radians(phi)
+            ka = (math.tan(math.radians(45) - (phi_rad / 2)))**2
+            kp = (math.tan(math.radians(45) + (phi_rad / 2)))**2
+    
+            pa_val = gamma * ka
+            pp_val = gamma * kp
+    
+            self.input_entries["PA"].delete(0, tk.END)
+            self.input_entries["PA"].insert(0, f"{pa_val:.2f}")
+    
+            self.input_entries["PP"].delete(0, tk.END)
+            self.input_entries["PP"].insert(0, f"{pp_val:.2f}")
+    
+        except (ValueError, KeyError):
+            messagebox.showwarning("Input Error", "Please enter numeric values for PHI and GAMMA first.")
+            
     def show_splash(self):
         self.splash_frame = tk.Frame(self.root, bg="black")
         self.splash_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
@@ -914,19 +940,25 @@ class CofferdamApp:
     def get_fields_for_current_case(self):
         sheet = self.selected_sheet.get()
         waler = self.selected_waler.get()
-
+    
         if sheet == "Case 1":
-            return ["S", "L", "PA", "PP"]
+            return ["PHI", "GAMMA", "S", "L", "PA", "PP"]
+    
         if sheet == "Case 2":
-            return ["S", "L", "PA", "PP", "D"]
+            return ["PHI", "GAMMA", "S", "L", "PA", "PP", "D"]
+    
         if sheet == "Case 3":
-            return ["S", "L", "PA", "PP", "D", "DW"]
+            return ["PHI", "GAMMA", "S", "L", "PA", "PP", "D", "DW"]
+    
         if sheet == "Case 4":
-            return ["S", "L", "PA", "PP", "D", "DW", "L1", "L2", "L3", "L4", "L5", "L6"]
+            return ["PHI", "GAMMA", "S", "L", "PA", "PP", "D", "DW", "L1", "L2", "L3", "L4", "L5", "L6"]
+    
         if sheet == "Case 5":
-            return ["S", "PA", "PP", "D"]
+            return ["PHI", "GAMMA", "S", "PA", "PP", "D"]
+    
         if sheet == "Case 6":
-            return ["S", "PA", "PP", "D", "DW"]
+            return ["PHI", "GAMMA", "S", "PA", "PP", "D", "DW"]
+    
         if sheet == "Case 7":
             if waler == "Waler I":
                 return ["R", "W", "E", "S", "H", "FC", "FY", "rebarList"]
@@ -934,6 +966,7 @@ class CofferdamApp:
                 return ["R", "W", "S", "H", "FC", "FY", "rebarList"]
             if waler == "Waler III":
                 return ["R", "W", "T", "C", "S", "H", "FC", "FY", "rebarList"]
+    
         return []
 
     def render_inputs(self):
@@ -966,7 +999,16 @@ class CofferdamApp:
                                       theme_getter=lambda: self.theme, width=200, height=50, radius=25, font=("Arial", 13, "bold"))
         back_btn.pack(side=tk.LEFT)
         self.grad_buttons.append(back_btn)
-    
+        if sheet != "Case 7":
+            est_btn = GradientButton(
+                footer, 
+                text="Estimate PA/PP", 
+                command=self.calculate_earth_pressures, 
+                theme_getter=lambda: self.theme, 
+                width=180, height=50, radius=25, font=("Arial", 11, "bold")
+            )
+            est_btn.pack(side=tk.LEFT, padx=10)
+            self.grad_buttons.append(est_btn)
         calc_btn = GradientButton(footer, text="Calculate →", command=lambda: on_exit(self.execute_calc),
                                       theme_getter=lambda: self.theme, width=230, height=50, radius=25, font=("Arial", 13, "bold"))
         calc_btn.pack(side=tk.RIGHT)
@@ -974,6 +1016,8 @@ class CofferdamApp:
     
 
         field_descriptions = {
+                "PHI": "Friction Angle (deg): The internal friction angle of the soil. Used to estimate PA/PP.",
+                "GAMMA": "Unit Weight (pcf): The density of the soil. Used to estimate PA/PP.",
                 "S": "Width of Waler: The horizontal thickness of concrete waler." if sheet == "Case 7" else "Surcharge Load: Vertical load applied to adjacent ground surface",
                 "PA": "Active Pressure: Lateral pressure from the soil pushing against the wall.",
                 "PP": "Passive Pressure: Lateral resistance from the soil below the dredge line holding the wall back.",
@@ -1415,35 +1459,33 @@ class CofferdamApp:
                 "CS": "Combined Stress Ratio     ",
                 "WM": "W-MAX                     ",
                 "PM": "P-MAX                     ",
-                "P1": "P1                        ",
-                "P2": "P2                        ",
-                "P3": "P3                        ",
-                "P4": "P4                        ",
-                "PT": "Total Pressure (PT)       ",
-                "R":  "Resultant Force (R)       ",
-                "WH": "High Water Force (WH)     ",
-                "WL": "Low Water Force (WL)      ",
-                "F":  "Factor of Safety (F)      ",
-                "PP": "Passive Pressure (PP)     ",
-                "PW": "Total Water Load (PW)     ",
-                "SR": "Surcharge Resultant (SR)  ",
+                "P1": "Surcharge Force (P1)      ",
+                "P2": "Active Soil Force (P2)    ",
+                "P3": "Net Passive Force (P3)    ",
+                "P4": "Additional Force (P4)     ",
+                "PT": "Total Pressure (PT)       ", 
+                "R":  "Resultant Force (R)       ", 
+                "WH": "High Water Force (WH)     ", 
+                "WL": "Low Water Force (WL)      ", 
+                "F":  "Factor of Safety (F)      ", 
+                "PP": "Passive Pressure (PP)     ", 
+                "PW": "Total Water Load (PW)     ", 
+                "P0": "Initial Resultant (P0)    ", 
+                "P5": "Toe Resistance Force (P5) ", 
+                "SR": "Surcharge Resultant (SR)  ", 
                 "WR": "Waler Resultant (WR)      ",
                 "WT": "Total Horizontal Force (WT)",
                 "TP": "Total Passive Force (TP)  ",
                 "XH": "Center of Pressure High (XH)",
                 "XL": "Center of Pressure Low (XL) ",
                 "AD": "Active Pressure Depth (AD) ",
-                "P":  "Resultant Load P",
                 "AS": "Area of Steel Reinforcement",
                 "TA": "Transformed Area of Steel",
                 "IS": "Moment of Inertia (Steel)",
                 "IC": "Moment of Inertia (Concrete)",
                 "IT": "Total Moment of Inertia",
                 "EC": "Eccentricity Check",
-                "T":  "Pressure at Dredge Line",
-                "L":  "Resultant Horizontal Load",
-                "H":  "Height to Resultant Load",                
-        }        
+        }   
         lines = []
         header = f"Results for {sheet}" if not waler else f"Results for {sheet} - {waler}"
         lines.append(header)
@@ -1798,42 +1840,41 @@ class CofferdamApp:
     def execute_calc(self):
         try:
             self.save_current_inputs()
-
             kwargs = {}
             for field, entry in self.input_entries.items():
                 val = entry.get().strip()
                 if not val:
+                    if field in ["PHI", "GAMMA"]: continue
                     raise ValueError(f"Field '{field}' cannot be empty.")
-
+    
                 if field == "rebarList":
                     parts = val.split(",")
-                    if len(parts) != 2:
-                        raise ValueError("Rebar List must be in 'Qty,Size' format like 2,8.")
                     kwargs["rebarList"] = [(int(parts[0].strip()), int(parts[1].strip()))]
                 else:
                     kwargs[field] = float(val)
-
+    
             sheet = self.selected_sheet.get()
             waler = self.selected_waler.get()
             res = {}
-
             if sheet == "Case 1":
-                res = CofferdamLibrary.case1(kwargs["S"], kwargs["L"], kwargs["PA"], kwargs["PP"])
+                res = CofferdamLibrary.case1(kwargs["S"], kwargs["L"], kwargs["PA"], kwargs["PP"], 
+                                                 kwargs.get("PHI"), kwargs.get("GAMMA"))
             elif sheet == "Case 2":
-                res = CofferdamLibrary.case2(kwargs["S"], kwargs["L"], kwargs["PA"], kwargs["PP"], kwargs["D"])
+                res = CofferdamLibrary.case2(kwargs["S"], kwargs["L"], kwargs["PA"], kwargs["PP"], kwargs["D"], 
+                                                 kwargs.get("PHI"), kwargs.get("GAMMA"))
             elif sheet == "Case 3":
-                res = CofferdamLibrary.case3(kwargs["S"], kwargs["L"], kwargs["PA"], kwargs["PP"], kwargs["D"], kwargs["DW"])
+                res = CofferdamLibrary.case3(kwargs["S"], kwargs["L"], kwargs["PA"], kwargs["PP"], kwargs["D"], kwargs["DW"],
+                                             kwargs.get("PHI"), kwargs.get("GAMMA")) 
             elif sheet == "Case 4":
-                res = CofferdamLibrary.case4(
-                    kwargs["S"], kwargs["L"], kwargs["PA"], kwargs["PP"],
-                    kwargs["D"], kwargs["DW"],
-                    kwargs["L1"], kwargs["L2"], kwargs["L3"],
-                    kwargs["L4"], kwargs["L5"], kwargs["L6"]
-                )
+                res = CofferdamLibrary.case4(kwargs["S"], kwargs["L"], kwargs["PA"], kwargs["PP"], kwargs["D"], kwargs["DW"],
+                                             kwargs["L1"], kwargs["L2"], kwargs["L3"], kwargs["L4"], kwargs["L5"], kwargs["L6"],
+                                             kwargs.get("PHI"), kwargs.get("GAMMA")) 
             elif sheet == "Case 5":
-                res = CofferdamLibrary.case5(kwargs["S"], kwargs["PA"], kwargs["PP"], kwargs["D"])
+                res = CofferdamLibrary.case5(kwargs["S"], kwargs["PA"], kwargs["PP"], kwargs["D"],
+                                             kwargs.get("PHI"), kwargs.get("GAMMA")) 
             elif sheet == "Case 6":
-                res = CofferdamLibrary.case6(kwargs["S"], kwargs["PA"], kwargs["PP"], kwargs["D"], kwargs["DW"])
+                res = CofferdamLibrary.case6(kwargs["S"], kwargs["PA"], kwargs["PP"], kwargs["D"], kwargs["DW"],
+                                             kwargs.get("PHI"), kwargs.get("GAMMA"))
             elif sheet == "Case 7":
                 if waler == "Waler I":
                     res = CofferdamLibrary.case7c1(
