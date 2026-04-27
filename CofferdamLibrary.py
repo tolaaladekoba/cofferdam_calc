@@ -2,9 +2,9 @@
 Project: CofferdamCalc
 File: CofferdamLibraray.py
 Authors: Rylan Weldon
-Date Last Modified: 4/2/2026
+Date Last Modified: 4/27/2026
 
-
+Changes made: Added abilitiy to calculate earth pressure automatically and checks for cases 1-6
 
 Description:
 
@@ -21,9 +21,23 @@ Author: Rylan Weldon
 """
 import math
 
-
-def case1(S, L, PA, PP):
-    # Case 1: determines cantilever moment when cofferdam is excavated to install top waler
+def calculate_earth_pressures(phi, gamma):
+    if phi is None or gamma is None or gamma == 0:
+        return 0, 0
+        
+    phi_rad = math.radians(phi)
+    
+    ka = (math.tan(math.radians(45) - (phi_rad / 2)))**2
+    kp = (math.tan(math.radians(45) + (phi_rad / 2)))**2
+    
+    pa_calc = gamma * ka
+    pp_calc = gamma * kp
+    
+    return pa_calc, pp_calc
+def case1(S, L, PA=None, PP=None, PHI=None, GAMMA=None):
+    # case1: Determine if we need to calculate pressures from soil properties
+    if (not PA or PA == 0) and PHI is not None:
+        PA, PP = calculate_earth_pressures(PHI, GAMMA)
     Z = S + (PA * L)
     X = Z / (PP - PA)
     P1 = S * L
@@ -39,7 +53,7 @@ def case1(S, L, PA, PP):
         + P3 * (Y + 2 * X / 3)
         - P4 * Y / 3
     )
-    SP = L + X + Y
+    SP = L+X+Y
 
     return {
         "Z": Z,
@@ -55,7 +69,9 @@ def case1(S, L, PA, PP):
     }
 
 
-def case2(S, L, PA, PP, D):
+def case2(S, L, PA=None, PP=None, D=None, PHI=None, GAMMA=None):
+    if (not PA or PA == 0) and PHI is not None:
+        PA, PP = calculate_earth_pressures(PHI, GAMMA)
     # Case 2: determines wall moment and top waler loading after excavation
     Z = S + (PA * D)
     X = Z / (PP - PA)
@@ -105,7 +121,9 @@ def case2(S, L, PA, PP, D):
         "Moments": mVals,
         "YValues": yVals,
     }
-def case3(S, L, PA, PP, D, DW):
+def case3(S, L, PA=None, PP=None, D=None, DW=None, PHI=None, GAMMA=None):
+        if (not PA or PA == 0) and PHI is not None:
+            PA, PP = calculate_earth_pressures(PHI, GAMMA)
         F = D-DW
         
         PPadj = PP+60 
@@ -179,7 +197,9 @@ def case3(S, L, PA, PP, D, DW):
             "Moments": mVals, 
             "YValues": yVals
         }
-def case4(S, L, PA, PP, D, DW, L1, L2, L3, L4, L5, L6):
+def case4(S, L, PA=None, PP=None, D=None, DW=None, L1=0, L2=0, L3=0, L4=0, L5=0, L6=0, PHI=None, GAMMA=None):
+    if (not PA or PA == 0) and PHI is not None:
+        PA, PP = calculate_earth_pressures(PHI, GAMMA)
     # Case 4: determines wall moments and waler loadings for two or more walers
 
     X = (S + (PA * D)) / (PP - PA)
@@ -254,7 +274,9 @@ def case4(S, L, PA, PP, D, DW, L1, L2, L3, L4, L5, L6):
         "ML6": ML6,
         "TP": TP,
     }
-def case5(S, PA, PP, D):
+def case5(S, PA=None, PP=None, D=None, PHI=None, GAMMA=None):
+    if (not PA or PA == 0) and PHI is not None:
+        PA, PP = calculate_earth_pressures(PHI, GAMMA)
     T = S+(PA*D)
     M = T/(PP-PA)
     
@@ -308,7 +330,9 @@ def case5(S, PA, PP, D):
         "VC": VC
     }
 
-def case6(S, PA, PP, D, DW):
+def case6(S, PA=None, PP=None, D=None, DW=None, PHI=None, GAMMA=None):
+    if (not PA or PA == 0) and PHI is not None:
+        PA, PP = calculate_earth_pressures(PHI, GAMMA)
     # Case 6: determines moment and minimum length of sheetpile for a cantilevered bulkhead
 
     XH = 2000
