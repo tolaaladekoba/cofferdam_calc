@@ -17,7 +17,6 @@ To Run:
 On a computer with Python installed, ensure that you have the current file installed with the .py file extension
 and double click to run with Python. The output from the test cases will be displayed.
 
-Author: Rylan Weldon
 """
 import math
 
